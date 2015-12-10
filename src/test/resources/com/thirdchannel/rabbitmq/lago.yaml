@@ -1,0 +1,40 @@
+---
+connectionUrl: test
+virtualHost: "/"
+port: 5672
+username: guest
+password: guest
+host: localhost
+exchanges:
+  -
+    name: oneTopic
+    type: topic
+    autoDelete: true
+    durable: false
+    queues:
+      -
+        name: test1
+        durable: false
+        autoDelete: true
+        autoAck: true
+        key: foo.bar
+        factory: widgetConsumer
+      -
+        name: multi
+        count: 3
+        key: multi.foo
+        factory: multiConsumer
+      -
+        name: rpc-test
+        count: 2
+        autoAck: true
+        key: "widget.read"
+        factory: widgetRPC
+        
+
+
+  -
+    name: "mailbox"
+    type: direct
+    autoDelete: true
+    durable: false
