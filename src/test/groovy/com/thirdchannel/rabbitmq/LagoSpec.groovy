@@ -5,7 +5,6 @@ import com.rabbitmq.client.Channel
 import com.thirdchannel.rabbitmq.mock.MockChannel
 import com.thirdchannel.rabbitmq.mock.Widget
 import com.thirdchannel.rabbitmq.mock.WidgetConsumer
-
 import com.thirdchannel.rabbitmq.mock.WidgetRPCConsumer
 import spock.lang.Shared
 import spock.lang.Specification

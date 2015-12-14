@@ -1,7 +1,6 @@
 package com.thirdchannel.rabbitmq
 
 import com.thirdchannel.rabbitmq.mock.MultiConsumer
-
 import com.thirdchannel.rabbitmq.mock.WidgetConsumer
 import spock.lang.Shared
 import spock.lang.Specification

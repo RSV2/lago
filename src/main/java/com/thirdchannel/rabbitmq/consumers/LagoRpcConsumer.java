@@ -4,7 +4,6 @@ import com.rabbitmq.client.AMQP;
 import com.thirdchannel.rabbitmq.RabbitMQDeliveryDetails;
 
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 
 /**
  * @author Steve Pember

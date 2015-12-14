@@ -1,7 +1,6 @@
 package com.thirdchannel.rabbitmq.config;
 
 import com.thirdchannel.rabbitmq.consumers.EventConsumer;
-import com.thirdchannel.rabbitmq.consumers.factories.ConsumerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,30 +147,6 @@ public class RabbitMQConfig {
         log.debug("Located connection url " + url);
 
         return url == null ? "" : url;
-    }
-
-    @Deprecated
-    public QueueConsumerConfig findQueueConfigForFactory(ConsumerFactory factory) {
-        String factoryName = factory.getClass().getSimpleName();
-        QueueConsumerConfig foundQueueConsumerConfig = null;
-        log.debug("Looking for factory with name " + factory.getClass().getSimpleName());
-        for (ExchangeConfig exchangeConfig : this.getExchanges()) {
-            for (QueueConsumerConfig queueConsumerConfig : exchangeConfig.getQueues()) {
-                if (factoryName.toLowerCase().startsWith(queueConsumerConfig.getFactory().toLowerCase())) {
-                    log.debug("Configuration located for Factory: " + factoryName);
-                    foundQueueConsumerConfig = queueConsumerConfig;
-                    // set the exchange name on the lower level config object to avoid having to find a way to return two objects
-                    foundQueueConsumerConfig.setExchangeName(exchangeConfig.getName());
-                }
-            }
-        }
-
-        if (foundQueueConsumerConfig == null) {
-            log.warn("Could not find matching configuration for factory: " + factoryName);
-            foundQueueConsumerConfig = new QueueConsumerConfig();
-            foundQueueConsumerConfig.setCount(0); // ensure it won't run
-        }
-        return foundQueueConsumerConfig;
     }
 
     public QueueConsumerConfig findQueueConfig(EventConsumer consumer) {

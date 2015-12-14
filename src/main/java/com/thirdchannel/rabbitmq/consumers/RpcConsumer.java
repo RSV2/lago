@@ -1,6 +1,5 @@
 package com.thirdchannel.rabbitmq.consumers;
 
-import com.rabbitmq.client.Consumer;
 import com.thirdchannel.rabbitmq.RabbitMQDeliveryDetails;
 
 /**
