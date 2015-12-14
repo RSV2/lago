@@ -2,6 +2,7 @@ package com.thirdchannel.rabbitmq.consumers
 
 import com.thirdchannel.rabbitmq.Lago
 import com.thirdchannel.rabbitmq.config.QueueConsumerConfig
+import com.thirdchannel.rabbitmq.messages.ApiResponse
 import com.thirdchannel.rabbitmq.mock.WidgetConsumer
 import com.thirdchannel.rabbitmq.mock.WidgetRPCConsumer
 import spock.lang.Shared
@@ -34,10 +35,17 @@ class ApiRpcConsumerSpec extends Specification {
 
         when:
 
-        Map result = apiRpcConsumer.buildApi()
+        //ApiResponse response = apiRpcConsumer.buildApi()
+        ApiResponse response = lago.rpc("oneTopic", "api:lago", [:], ApiResponse.class, lago.channel)
+        println "Have consumers of ${response.consumers.size()}"
+        println response
+        response.consumers.each {
+            println it.in
+            println it.out
+        }
 
         then:
-        result != null
+        response != null;
 
         // service
         // topic

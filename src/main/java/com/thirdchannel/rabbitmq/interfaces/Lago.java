@@ -19,6 +19,7 @@ public interface Lago {
     Connection connect(String userName, String password, String virtualHost, String host, int port);
     Connection connect(ConnectionFactory factory);
     Channel createChannel();
+    Channel getChannel();
 
     void setExceptionHandler(ExceptionHandler handler);
     List<EventConsumer> getRegisteredConsumers();

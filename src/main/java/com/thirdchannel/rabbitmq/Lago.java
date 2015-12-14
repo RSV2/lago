@@ -190,6 +190,10 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         }
     }
 
+    public Channel getChannel() {
+        return channel;
+    }
+
     public void setExceptionHandler(ExceptionHandler handler) {
         exceptionHandler = handler;
     }

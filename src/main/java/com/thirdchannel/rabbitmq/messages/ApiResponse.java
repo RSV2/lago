@@ -1,6 +1,8 @@
 package com.thirdchannel.rabbitmq.messages;
 
 import com.thirdchannel.rabbitmq.consumers.EventConsumer;
+import com.thirdchannel.rabbitmq.consumers.LagoRpcConsumer;
+import com.thirdchannel.rabbitmq.consumers.RpcConsumer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +23,6 @@ public class ApiResponse {
     }
 
     public void parseConsumer(EventConsumer consumer) {
-
+        this.consumers.add(new ConsumerApiResponse(consumer));
     }
 }

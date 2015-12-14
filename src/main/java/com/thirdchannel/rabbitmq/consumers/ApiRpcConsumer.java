@@ -13,10 +13,10 @@ import java.util.Map;
 public class ApiRpcConsumer extends LagoRpcConsumer<Object, ApiResponse> {
     @Override
     public ApiResponse handleRPC(Object message, RabbitMQDeliveryDetails rabbitMQDeliveryDetails) {
-        return null;
+        return buildApi();
     }
 
-    public Map buildApi() {
+    public ApiResponse buildApi() {
         ApiResponse response = new ApiResponse();
 
         for (EventConsumer consumer : getLago().getRegisteredConsumers()) {
@@ -24,10 +24,8 @@ public class ApiRpcConsumer extends LagoRpcConsumer<Object, ApiResponse> {
 
             log.info("Instance of Lagorpc? " + (consumer instanceof RpcConsumer));
 
-            if (consumer instanceof RpcConsumer) {
-                Class c = ((LagoRpcConsumer) consumer).getResponseClass();
-                log.info(consumer.getClass().getSimpleName() + " response: " + (c));
-            }
+
+            response.parseConsumer(consumer);
 
 //            try {
 //
@@ -47,12 +45,6 @@ public class ApiRpcConsumer extends LagoRpcConsumer<Object, ApiResponse> {
 //                log.error("Could not cast: ", cce);
 //            }
         }
-
-        return new HashMap<String, String>();
-    }
-
-    private ConsumerApiResponse parseConsumer(EventConsumer consumer) {
-        ConsumerApiResponse response = new ConsumerApiResponse();
 
         return response;
     }
