@@ -22,6 +22,7 @@ public interface Lago {
 
     void setExceptionHandler(ExceptionHandler handler);
     List<EventConsumer> getRegisteredConsumers();
+    void registerConsumer(EventConsumer consumer);
 
     void publish(String exchangeName, String key, Object message, AMQP.BasicProperties properties);
     void publish(String exchangeName, String key, Object message, AMQP.BasicProperties properties, Channel channel);

@@ -6,7 +6,9 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownSignalException;
 import com.thirdchannel.rabbitmq.RabbitMQDeliveryDetails;
+import com.thirdchannel.rabbitmq.config.QueueConsumerConfig;
 import com.thirdchannel.rabbitmq.interfaces.Lago;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,15 +19,17 @@ import java.lang.reflect.ParameterizedType;
  *
  * @author Steve Pember
  */
-abstract public class LagoEventConsumer<M> implements EventConsumer<M> {
+abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneable {
     protected Logger log = LoggerFactory.getLogger(this.getClass());
     private Lago lago;
     private Channel channel;
-    private boolean autoAck = false;
-    private String exchangeName;
+    private QueueConsumerConfig config;
+    private String queueName = this.getClass().getSimpleName().toLowerCase();
 
     private static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private Class<M> messageType;
+
+
 
 
     @SuppressWarnings("unchecked")
@@ -43,6 +47,18 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M> {
     }
 
     @Override
+    public String getQueueName() {
+        return queueName;
+    }
+
+    @Override
+    public void setQueueName(String name) {
+        queueName = name;
+    }
+
+
+
+    @Override
     public void setChannel(Channel channel) {
         this.channel = channel;
     }
@@ -52,15 +68,22 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M> {
         return channel;
     }
 
+
     @Override
-    public void setAutoAck(boolean autoAck) {
-        this.autoAck = autoAck;
+    public void setConfig(QueueConsumerConfig queueConsumerConfig) {
+        this.config = queueConsumerConfig;
     }
 
     @Override
-    public boolean isAutoAck() {
-        return autoAck;
+    public QueueConsumerConfig getConfig() {
+        return config;
     }
+
+    @Override
+    public boolean isConfigured() {
+        return getConfig() != null && !StringUtils.isEmpty(getQueueName()) && !StringUtils.isEmpty(config.getExchangeName()) && !StringUtils.isEmpty(config.getKey());
+    }
+
 
     @Override
     public void setLago(Lago lago) {
@@ -122,7 +145,7 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M> {
     }
 
     private void decideToAck(Envelope envelope, boolean deliveryStatus) throws IOException {
-        if (!isAutoAck()) {
+        if (!config.isAutoAck()) {
             if (deliveryStatus) {
                 channel.basicAck(envelope.getDeliveryTag(), false);
             } else {

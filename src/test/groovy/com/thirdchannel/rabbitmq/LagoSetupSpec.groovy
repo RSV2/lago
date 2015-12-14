@@ -1,9 +1,8 @@
 package com.thirdchannel.rabbitmq
 
-import com.thirdchannel.rabbitmq.consumers.factories.LagoConsumerFactory
-import com.thirdchannel.rabbitmq.mock.MultiConsumerFactory
+import com.thirdchannel.rabbitmq.mock.MultiConsumer
+
 import com.thirdchannel.rabbitmq.mock.WidgetConsumer
-import com.thirdchannel.rabbitmq.mock.WidgetConsumerFactory
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -11,11 +10,7 @@ import spock.lang.Specification
  * @author Steve Pember
  */
 class LagoSetupSpec extends Specification {
-    private class BadConsumerFactory extends LagoConsumerFactory<WidgetConsumer> {
-        @Override
-        WidgetConsumer produceConsumer() {
-            throw new RuntimeException("Should not be called!");
-        }
+    private class BadConsumer extends WidgetConsumer {
     }
 
     @Shared Lago lago
@@ -29,42 +24,42 @@ class LagoSetupSpec extends Specification {
         lago.close()
     }
 
-    void "Consumer Factories present in the configuration should receive the applied configuration settings" () {
+    void "Consumers present in the configuration should receive the applied configuration settings" () {
         given:
-        WidgetConsumerFactory factory = new WidgetConsumerFactory()
+        WidgetConsumer consumer = new WidgetConsumer()
 
         when:
-        lago.registerConsumerFactory(factory)
+        lago.registerConsumer(consumer)
 
         then:
-        factory.autoDelete
-        !factory.durable
-        factory.count == 1
-        factory.key == "foo.bar"
+        consumer.config.autoDelete
+        !consumer.config.durable
+        consumer.config.count == 1
+        consumer.config.key == "foo.bar"
         lago.getRegisteredConsumers().size() == 1
     }
 
-    void "Consumer factories with counts > 1 should create multiple consumers" () {
+    void "Consumers with counts > 1 should create multiple consumers" () {
         when:
-        lago.registerConsumerFactory(new WidgetConsumerFactory())
-        lago.registerConsumerFactory(new MultiConsumerFactory())
+        lago.registerConsumer(new WidgetConsumer())
+        lago.registerConsumer(new MultiConsumer())
 
         then:
         lago.getRegisteredConsumers().size() == 4
     }
 
-    void "Consumer Factories not present in the configuration should receive no config" () {
+    void "Consumers not present in the configuration should receive no config" () {
         given:
-        BadConsumerFactory factory = new BadConsumerFactory()
+        BadConsumer consumer = new BadConsumer()
 
         when:
-        lago.registerConsumerFactory(factory)
+        lago.registerConsumer(consumer)
 
         then:
-        !factory.autoDelete
-        !factory.durable
-        factory.count == 0
-        factory.key == ""
+        !consumer.config.autoDelete
+        !consumer.config.durable
+        consumer.config.count == 0
+        consumer.config.key == ""
     }
 
     void "Connecting without specifiying informmation should use the config or environment var "() {

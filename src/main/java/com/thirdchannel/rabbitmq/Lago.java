@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.rabbitmq.client.*;
 import com.thirdchannel.rabbitmq.config.ExchangeConfig;
 import com.thirdchannel.rabbitmq.config.RabbitMQConfig;
-import com.thirdchannel.rabbitmq.consumers.factories.ConsumerFactory;
 import com.thirdchannel.rabbitmq.consumers.EventConsumer;
 import com.thirdchannel.rabbitmq.exceptions.LagoDefaultExceptionHandler;
 import org.slf4j.Logger;
@@ -57,41 +56,46 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         }
     }
 
-
-    public void registerConsumerFactory(ConsumerFactory factory) {
-        /*
-            given a factory, looks for the matching configuration in the rabbitMqConfig
-            Configuration specifies the exchange, the queues, the key they listen on ( this could potentially lead to trouble in a 'direct' environment)
-            the details about the queue, the consumerFactories's
-         */
-        if (factory.isConfigured()) {
-            log.info(factory.getClass().getSimpleName() +" appears to be already configured");
+    public void registerConsumer(EventConsumer consumer) {
+        if (consumer.isConfigured()) {
+            log.info(consumer.getClass().getSimpleName() +" appears to be already configured");
         } else {
-            factory.applyConfig(config.findQueueConfigForFactory(factory));
+            consumer.setConfig(config.findQueueConfig(consumer));
+        }
+        if (consumer.getConfig().getCount() > 0) {
+            log.debug("About to spin up " + consumer.getConfig().getCount() + " instances of " + consumer.getClass().getSimpleName());
+            bindConsumer(consumer, 0);
+            for (int i = 1; i < consumer.getConfig().getCount(); i++) {
+                bindConsumer(consumer.spawn(), i);
+            }
+            log.info("Registered Consumer: " + consumer.getClass().getSimpleName());
+        } else {
+            log.warn("Count of less then one provided for Consumer: " + consumer.getClass().getSimpleName());
         }
 
-        log.info("About to spin up " + factory.getCount() + "instances.");
-        for (int i = 0; i < factory.getCount(); i++) {
-            EventConsumer consumer = factory.produceConsumer();
-            log.info("Have consumer " + consumer.getClass());
-            consumer.setChannel(createChannel());
-            try {
-                log.info("About to make queue with name: " + factory.getQueueName());
-                consumer.getChannel().queueDeclare(
-                        factory.getQueueName(),
-                        factory.isDurable(),
-                        factory.getCount() > 1,
-                        factory.isAutoDelete(),
-                        null
-                );
-                consumer.setLago(this);
-                consumer.getChannel().queueBind(factory.getQueueName(), factory.getExchangeName(), factory.getKey());
-                consumer.getChannel().basicConsume(factory.getQueueName(), true,
-                        consumer.getClass().getSimpleName() + "-" + (i + 1), consumer);
-                registeredConsumers.add(consumer);
-            } catch (IOException e) {
-                log.error("Could not declare queue and bind to consumer: " + e.getMessage(), e);
-            }
+
+
+    }
+
+    private void bindConsumer(EventConsumer consumer, int count) {
+        consumer.setChannel(createChannel());
+
+        try {
+            log.debug("About to make queue with name: " + consumer.getQueueName());
+            consumer.getChannel().queueDeclare(
+                    consumer.getQueueName(),
+                    consumer.getConfig().isDurable(),
+                    consumer.getConfig().getCount() > 1,
+                    consumer.getConfig().isAutoDelete(),
+                    null
+            );
+            consumer.setLago(this);
+            consumer.getChannel().queueBind(consumer.getQueueName(), consumer.getConfig().getExchangeName(), consumer.getConfig().getKey());
+            consumer.getChannel().basicConsume(consumer.getQueueName(), true,
+                    consumer.getClass().getSimpleName() + "-" + (count + 1), consumer);
+            registeredConsumers.add(consumer);
+        } catch (IOException e) {
+            log.error("Could not declare queue and bind to consumer: " + e.getMessage(), e);
         }
     }
 

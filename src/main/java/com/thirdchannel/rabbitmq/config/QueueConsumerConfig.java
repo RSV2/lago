@@ -3,7 +3,7 @@ package com.thirdchannel.rabbitmq.config;
 /**
  * @author Steve Pember
  */
-public class QueueConfig {
+public class QueueConsumerConfig {
 
     private String name = "";
     private int count = 1;

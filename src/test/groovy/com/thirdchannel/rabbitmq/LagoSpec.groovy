@@ -5,8 +5,8 @@ import com.rabbitmq.client.Channel
 import com.thirdchannel.rabbitmq.mock.MockChannel
 import com.thirdchannel.rabbitmq.mock.Widget
 import com.thirdchannel.rabbitmq.mock.WidgetConsumer
-import com.thirdchannel.rabbitmq.mock.WidgetConsumerFactory
-import com.thirdchannel.rabbitmq.mock.WidgetRPCConsumerFactory
+
+import com.thirdchannel.rabbitmq.mock.WidgetRPCConsumer
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -60,8 +60,7 @@ class LagoSpec extends Specification {
         given:
 
         Widget widget = new Widget(count: 100, active:true, name: "Blarg")
-        WidgetConsumerFactory widgetConsumerFactory = new WidgetConsumerFactory()
-        lago.registerConsumerFactory(widgetConsumerFactory)
+        lago.registerConsumer(new WidgetConsumer())
 
         when:
         lago.publish("oneTopic", "foo.bar", widget, new AMQP.BasicProperties())
@@ -77,8 +76,8 @@ class LagoSpec extends Specification {
     def "Rpc calls should send and receive JSON" () {
 
         given:
-        lago.registerConsumerFactory(new WidgetRPCConsumerFactory())
-        lago.registerConsumerFactory(new WidgetConsumerFactory())
+        lago.registerConsumer(new WidgetRPCConsumer());
+        lago.registerConsumer(new WidgetConsumer());
 
 
         when:

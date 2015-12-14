@@ -12,7 +12,7 @@ public class ExchangeConfig {
     private String type = "direct";
     private boolean autoDelete = false;
     private boolean durable = true;
-    private List<QueueConfig> queues = new ArrayList<QueueConfig>();
+    private List<QueueConsumerConfig> queues = new ArrayList<QueueConsumerConfig>();
 
     public String getName() {
         return name;
@@ -30,11 +30,11 @@ public class ExchangeConfig {
         this.type = type;
     }
 
-    public List<QueueConfig> getQueues() {
+    public List<QueueConsumerConfig> getQueues() {
         return queues;
     }
 
-    public void setQueues(List<QueueConfig> queues) {
+    public void setQueues(List<QueueConsumerConfig> queues) {
         this.queues = queues;
     }
 

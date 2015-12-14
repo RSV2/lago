@@ -1,5 +1,6 @@
 package com.thirdchannel.rabbitmq.config;
 
+import com.thirdchannel.rabbitmq.consumers.EventConsumer;
 import com.thirdchannel.rabbitmq.consumers.factories.ConsumerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,27 +150,51 @@ public class RabbitMQConfig {
         return url == null ? "" : url;
     }
 
-    public QueueConfig findQueueConfigForFactory(ConsumerFactory factory) {
+    @Deprecated
+    public QueueConsumerConfig findQueueConfigForFactory(ConsumerFactory factory) {
         String factoryName = factory.getClass().getSimpleName();
-        QueueConfig foundQueueConfig = null;
+        QueueConsumerConfig foundQueueConsumerConfig = null;
         log.debug("Looking for factory with name " + factory.getClass().getSimpleName());
         for (ExchangeConfig exchangeConfig : this.getExchanges()) {
-            for (QueueConfig queueConfig : exchangeConfig.getQueues()) {
-                if (factoryName.toLowerCase().startsWith(queueConfig.getFactory().toLowerCase())) {
+            for (QueueConsumerConfig queueConsumerConfig : exchangeConfig.getQueues()) {
+                if (factoryName.toLowerCase().startsWith(queueConsumerConfig.getFactory().toLowerCase())) {
                     log.debug("Configuration located for Factory: " + factoryName);
-                    foundQueueConfig = queueConfig;
+                    foundQueueConsumerConfig = queueConsumerConfig;
                     // set the exchange name on the lower level config object to avoid having to find a way to return two objects
-                    foundQueueConfig.setExchangeName(exchangeConfig.getName());
+                    foundQueueConsumerConfig.setExchangeName(exchangeConfig.getName());
                 }
             }
         }
 
-        if (foundQueueConfig == null) {
+        if (foundQueueConsumerConfig == null) {
             log.warn("Could not find matching configuration for factory: " + factoryName);
-            foundQueueConfig = new QueueConfig();
-            foundQueueConfig.setCount(0); // ensure it won't run
+            foundQueueConsumerConfig = new QueueConsumerConfig();
+            foundQueueConsumerConfig.setCount(0); // ensure it won't run
         }
-        return foundQueueConfig;
+        return foundQueueConsumerConfig;
+    }
+
+    public QueueConsumerConfig findQueueConfig(EventConsumer consumer) {
+        String factoryName = consumer.getClass().getSimpleName();
+        QueueConsumerConfig foundQueueConsumerConfig = null;
+        log.debug("Looking for Consumer with name " + consumer.getClass().getSimpleName());
+        for (ExchangeConfig exchangeConfig : this.getExchanges()) {
+            for (QueueConsumerConfig queueConsumerConfig : exchangeConfig.getQueues()) {
+                if (factoryName.toLowerCase().startsWith(queueConsumerConfig.getFactory().toLowerCase())) {
+                    log.debug("Configuration located for Consumer: " + factoryName);
+                    foundQueueConsumerConfig = queueConsumerConfig;
+                    // set the exchange name on the lower level config object to avoid having to find a way to return two objects
+                    foundQueueConsumerConfig.setExchangeName(exchangeConfig.getName());
+                }
+            }
+        }
+
+        if (foundQueueConsumerConfig == null) {
+            log.warn("Could not find matching configuration for factory: " + factoryName);
+            foundQueueConsumerConfig = new QueueConsumerConfig();
+            foundQueueConsumerConfig.setCount(0); // ensure it won't run
+        }
+        return foundQueueConsumerConfig;
     }
 
 
