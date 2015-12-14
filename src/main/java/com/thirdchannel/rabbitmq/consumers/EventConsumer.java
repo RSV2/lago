@@ -19,6 +19,14 @@ public interface EventConsumer<M> extends Consumer {
     void setLago(Lago lago);
     Lago getLago();
 
+    Class<M> getMessageClass();
+
     boolean handleMessage(M data, RabbitMQDeliveryDetails rabbitMQDeliveryDetails);
+
+    /**
+     * Like 'copy', but meant to be used to handle things like dependency injection;
+     * @return
+     */
+    EventConsumer<M> spawn();
 
 }

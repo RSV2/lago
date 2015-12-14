@@ -64,7 +64,12 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
             Configuration specifies the exchange, the queues, the key they listen on ( this could potentially lead to trouble in a 'direct' environment)
             the details about the queue, the consumerFactories's
          */
-        factory.applyConfig(config.findQueueConfigForFactory(factory));
+        if (factory.isConfigured()) {
+            log.info(factory.getClass().getSimpleName() +" appears to be already configured");
+        } else {
+            factory.applyConfig(config.findQueueConfigForFactory(factory));
+        }
+
         log.info("About to spin up " + factory.getCount() + "instances.");
         for (int i = 0; i < factory.getCount(); i++) {
             EventConsumer consumer = factory.produceConsumer();
@@ -151,6 +156,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
             for (ExchangeConfig exchangeConfig : config.getExchanges()) {
                 channel.exchangeDeclare(exchangeConfig.getName(), exchangeConfig.getType(), exchangeConfig.isDurable(), exchangeConfig.isAutoDelete(), null);
             }
+            // todo: declare internal api rpc consumer
         } catch(IOException | TimeoutException e) {
             log.error(e.getMessage(), e);
         }

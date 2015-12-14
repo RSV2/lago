@@ -3,10 +3,15 @@ package com.thirdchannel.rabbitmq.consumers;
 import com.rabbitmq.client.AMQP;
 import com.thirdchannel.rabbitmq.RabbitMQDeliveryDetails;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+
 /**
  * @author Steve Pember
  */
 public abstract class LagoRpcConsumer<M, R> extends LagoEventConsumer<M> implements RpcConsumer<M, R> {
+    private Class<R> responseClass;
+
     @Override
     public boolean handleMessage(M data, RabbitMQDeliveryDetails rabbitMQDeliveryDetails) {
 
@@ -23,5 +28,19 @@ public abstract class LagoRpcConsumer<M, R> extends LagoEventConsumer<M> impleme
         getLago().publish(rabbitMQDeliveryDetails.getEnvelope().getExchange(), replyTo, response, replyProps);
         return true;
 
+    }
+
+    @Override
+    public Class<R> getResponseClass() {
+        if (responseClass == null) {
+            setResponseClass();
+        }
+        return responseClass;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void setResponseClass() {
+        responseClass = ((Class) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[1]);
+        log.trace("Set generic type of " + responseClass.getSimpleName());
     }
 }

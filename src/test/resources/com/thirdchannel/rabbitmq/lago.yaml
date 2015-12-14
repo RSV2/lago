@@ -30,9 +30,6 @@ exchanges:
         autoAck: true
         key: "widget.read"
         factory: widgetRPC
-        
-
-
   -
     name: "mailbox"
     type: direct

@@ -33,5 +33,6 @@ public interface ConsumerFactory<C extends EventConsumer> {
     String getKey();
 
     void applyConfig(QueueConfig queueConfig);
+    boolean isConfigured();
 
 }

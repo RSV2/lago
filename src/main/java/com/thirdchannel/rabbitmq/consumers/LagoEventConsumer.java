@@ -25,13 +25,21 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M> {
     private String exchangeName;
 
     private static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private Class<M> genericType;
+    private Class<M> messageType;
 
 
     @SuppressWarnings("unchecked")
-    private void setGenericType() {
-        genericType = ((Class) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0]);
-        log.info("Set generic type of " + genericType.getSimpleName());
+    private void setMessageType() {
+        messageType = ((Class) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0]);
+        log.trace("Set generic type of " + messageType.getSimpleName());
+    }
+
+    @Override
+    public Class<M> getMessageClass() {
+        if (messageType == null) {
+            setMessageType();
+        }
+        return messageType;
     }
 
     @Override
@@ -92,18 +100,15 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M> {
     @Override
     public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("Handling message with topic " +envelope.getRoutingKey() + " on consumerTag " + consumerTag +" and data: " + new String(body));
+            log.debug("Handling message with topic " + envelope.getRoutingKey() + " on consumerTag " + consumerTag +" and data: " + new String(body));
         }
 
         RabbitMQDeliveryDetails deliveryDetails = new RabbitMQDeliveryDetails(envelope, properties, consumerTag);
-        if (genericType == null) {
-            setGenericType();
-        }
 
         boolean deliveryStatus = true;
 
         try {
-            if (!handleMessage(OBJECT_MAPPER.readValue(body, this.genericType), deliveryDetails)) {
+            if (!handleMessage(OBJECT_MAPPER.readValue(body, getMessageClass()), deliveryDetails)) {
                 deliveryStatus = false;
             }
         }
@@ -126,4 +131,14 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M> {
         }
     }
 
+    @Override
+    @SuppressWarnings("unchecked")
+    public EventConsumer<M> spawn() {
+        try {
+            return (EventConsumer<M>) this.clone();
+        } catch (CloneNotSupportedException e) {
+            log.error("Could not spawn new consumer: ", e);
+            return null;
+        }
+    }
 }

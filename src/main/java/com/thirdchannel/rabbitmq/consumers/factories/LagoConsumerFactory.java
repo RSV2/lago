@@ -2,6 +2,7 @@ package com.thirdchannel.rabbitmq.consumers.factories;
 
 import com.thirdchannel.rabbitmq.config.QueueConfig;
 import com.thirdchannel.rabbitmq.consumers.EventConsumer;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author Steve Pember
@@ -58,6 +59,11 @@ abstract public class LagoConsumerFactory<C extends EventConsumer> implements Co
         setAutoAck(queueConfig.isAutoAck());
         setExchangeName(queueConfig.getExchangeName());
         setQueueName(queueConfig.getName());
+    }
+
+    @Override
+    public boolean isConfigured() {
+        return !StringUtils.isEmpty(getQueueName()) && !StringUtils.isEmpty(getExchangeName()) && !StringUtils.isEmpty(getKey());
     }
 
     @Override
