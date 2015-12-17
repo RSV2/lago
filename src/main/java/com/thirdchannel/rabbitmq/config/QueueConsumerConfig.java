@@ -11,6 +11,10 @@ public class QueueConsumerConfig {
     private String exchangeName = "";
     private boolean durable = false;
     private boolean autoDelete = false;
+    private boolean autoAck = true;
+    private boolean logTime = true; // if true, will log processing time for each request on this consumer
+
+    private String factory;
 
     public boolean isAutoAck() {
         return autoAck;
@@ -19,11 +23,6 @@ public class QueueConsumerConfig {
     public void setAutoAck(boolean autoAck) {
         this.autoAck = autoAck;
     }
-
-    private boolean autoAck = true;
-
-
-    private String factory;
 
     public String getName() {
         return name;
@@ -79,5 +78,13 @@ public class QueueConsumerConfig {
 
     public void setExchangeName(String exchangeName) {
         this.exchangeName = exchangeName;
+    }
+
+    public boolean isLogTime() {
+        return logTime;
+    }
+
+    public void setLogTime(boolean logTime) {
+        this.logTime = logTime;
     }
 }

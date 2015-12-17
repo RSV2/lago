@@ -22,6 +22,7 @@ public class RabbitMQConfig {
     private int heartbeatInterval = 5; // seconds, wtf
     private boolean automaticRecoveryEnabled = true;
     private boolean topologyRecoveryEnabled = true;
+    private boolean logRpcTime = true; // if true, will log the time an rpc call takes
 
     // connection information
 
@@ -127,6 +128,14 @@ public class RabbitMQConfig {
 
     public void setTopologyRecoveryEnabled(boolean topologyRecoveryEnabled) {
         this.topologyRecoveryEnabled = topologyRecoveryEnabled;
+    }
+
+    public boolean isLogRpcTime() {
+        return logRpcTime;
+    }
+
+    public void setLogRpcTime(boolean logRpcTime) {
+        this.logRpcTime = logRpcTime;
     }
 
     public boolean hasConnectionConfig() {

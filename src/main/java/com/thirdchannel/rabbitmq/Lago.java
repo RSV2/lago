@@ -15,9 +15,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -253,6 +251,9 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         // * I cannot find any documentation on how to use them, all searches for things like 'rabbitmq java client channel rpc' result in
         //      documentation about how to programatically do an rpc call (e.g. what we do here).
         // * The official java rabbitmq documentation also says to do what we do here.
+        long start = 0;
+        if (config.isLogRpcTime()) {start = new Date().getTime();}
+
         ObjectReader objectReader = OBJECT_MAPPER.readerFor(clazz);
         String replyQueueName = channel.queueDeclare().getQueue();
         log.info("Listening for rpc response on " + replyQueueName);
@@ -281,23 +282,28 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         }
 
         if (delivery != null) {
-            log.debug("RPC response received.");
+            log.trace("RPC response received.");
 
             if (delivery.getProperties().getCorrelationId().equals(corrId)) {
-                log.debug("Correlation ids are equal.");
+                log.trace("Correlation ids are equal.");
                 channel.basicCancel(consumer.getConsumerTag());
 //
             } else {
-                log.warn("Correlation ids not equal!");
+                log.warn("Correlation ids not equal! key: " + key);
+                return null;
             }
         } else {
-            log.warn("Timeout occurred on RPC message to topic: " + key);
+            log.warn("Timeout occurred on RPC message to key: " + key);
             return null;
         }
 //        // we must clean up!
         channel.queueUnbind(replyQueueName, exchangeName, replyQueueName);
         channel.queueDelete(replyQueueName);
-        //parse response;
+        if (config.isLogRpcTime()) {
+            long finish = new Date().getTime();
+            log.info("RPC complete in " + (finish-start) +"ms. key: " + key + ", correlation: " + delivery.getProperties().getCorrelationId());
+        }
+        log.debug("Received: {}", new String(delivery.getBody()));
         return objectReader.readValue(delivery.getBody());
     }
 }

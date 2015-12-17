@@ -4,7 +4,12 @@ import com.thirdchannel.rabbitmq.consumers.EventConsumer;
 import com.thirdchannel.rabbitmq.consumers.LagoRpcConsumer;
 import com.thirdchannel.rabbitmq.consumers.RpcConsumer;
 
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,8 +23,8 @@ public class ConsumerApiResponse {
     String exchange;
     String key;
 
-    List<Map<String, String>> in = new ArrayList<Map<String,String>>();
-    List<Map<String, String>> out = new ArrayList<Map<String,String>>();
+    Map<String, String> in = new HashMap<String,String>();
+    Map<String, String> out = new HashMap<String,String>();
 
     ConsumerApiResponse() {
     }
@@ -33,19 +38,27 @@ public class ConsumerApiResponse {
 
 
         if (consumer instanceof RpcConsumer) {
-            //Class c = ((LagoRpcConsumer) consumer).getResponseClass();
             setOut(exportFields(((LagoRpcConsumer) consumer).getResponseClass()));
         }
     }
 
-    private List<Map<String, String>> exportFields(Class c) {
-        List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+    private Map<String, String> exportFields(Class c) {
+        Map<String, String> fields = new HashMap<String, String>();
 
-        for (Field field : c.getDeclaredFields()) {
-            Map<String, String> description = new HashMap<String, String>();
-            description.put("name", field.getName());
-            description.put("type", field.getType().getSimpleName());
-            fields.add(description);
+        for (Method method: c.getDeclaredMethods()) {
+            BeanInfo info = null;
+            try {
+                info = Introspector.getBeanInfo(c);
+
+                PropertyDescriptor[] props = info.getPropertyDescriptors();
+                for (PropertyDescriptor pd : props) {
+                    if (!method.isSynthetic() && method.equals(pd.getReadMethod())) {
+                        fields.put(pd.getDisplayName(), pd.getPropertyType().getSimpleName());
+                    }
+                }
+            } catch (IntrospectionException e) {
+                e.printStackTrace();
+            }
         }
         return fields;
     }
@@ -66,19 +79,19 @@ public class ConsumerApiResponse {
         this.key = key;
     }
 
-    public List<Map<String, String>> getIn() {
+    public Map<String, String> getIn() {
         return in;
     }
 
-    public void setIn(List<Map<String, String>> in) {
+    public void setIn(Map<String, String> in) {
         this.in = in;
     }
 
-    public List<Map<String, String>> getOut() {
+    public Map<String, String> getOut() {
         return out;
     }
 
-    public void setOut(List<Map<String, String>> out) {
+    public void setOut(Map<String, String> out) {
         this.out = out;
     }
 }
