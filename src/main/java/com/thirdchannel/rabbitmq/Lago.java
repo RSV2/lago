@@ -217,11 +217,11 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 
     /**
      *
-     * @param message
-     * @param key
-     * @param properties
-     * @param channel
-     * @param exchangeName
+     * @param message Object containing the information you want to transmit. Could be as simple as a single value, a Map, an Object, etc. This object will be serialized using Jackson, so Jackson Annotations will be respected
+     * @param key String The routing key for outgoing message
+     * @param properties BasicProperties Standard RabbitMQ Basic Properties
+     * @param channel Channel The Channel to transmit on
+     * @param exchangeName String The name of the exchange to transmit on
      */
     public void publish(String exchangeName, String key, Object message, AMQP.BasicProperties properties, Channel channel) {
         try {
@@ -236,12 +236,12 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 
     /**
      *
-     * @param exchangeName
-     * @param key
-     * @param message
-     * @param clazz
-     * @param channel
-     * @return
+     * @param exchangeName The name of the exchange to publish on
+     * @param key String The routing key to publish on
+     * @param message Object representing the outgoing data. Will typically encapsulate some sort of query information
+     * @param clazz Clazz The class of the expected return data
+     * @param channel Channel Channel to broadcast on
+     * @return Object Will be an instance of clazz
      * @throws IOException
      */
     public Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel) throws IOException {
@@ -250,16 +250,15 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 
     /**
      *
-     * @param exchangeName
-     * @param key
-     * @param message
-     * @param clazz
-     * @param channel
-     * @param spanId
-     * @return
+     * @param exchangeName The name of the exchange to publish on
+     * @param key String The routing key to publish on
+     * @param message Object representing the outgoing data. Will typically encapsulate some sort of query information
+     * @param clazz Clazz The class of the expected return data
+     * @param channel Channel Channel to broadcast on
+     * @return Object Will be an instance of clazz
      * @throws IOException
      */
-    public Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel, String spanId) throws IOException {
+    public Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel, String traceId) throws IOException {
         // to do an RPC (synchronous, in this case) in RabbitMQ, we must do the following:
         // 1. create a unique response queue for the rpc call
         // 2. create a new channel for the queue //todo: eventually make this optional
@@ -288,16 +287,9 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         channel.queueBind(replyQueueName, exchangeName, replyQueueName);
         channel.basicConsume(replyQueueName, true, consumer);
 
-        String corrId = UUID.randomUUID().toString();
-        Map<String, Object> headers = new HashMap<String, Object>();
-        headers.put(RpcStopWatch.TRACE_ID, spanId);
-        AMQP.BasicProperties props = new AMQP.BasicProperties.Builder()
-                .correlationId(corrId)
-                .replyTo(replyQueueName)
-                .headers(headers)
-                .build();
+        RabbitMQDeliveryDetails rpcDetails = buildRpcRabbitMQDeliveryDetails(exchangeName, key, replyQueueName, traceId);
         // then publish the query
-        publish(exchangeName, key, message, props, channel);
+        publish(exchangeName, key, message, rpcDetails.getBasicProperties(), channel);
         log.debug("Waiting for rpc response delivery on " + key);
 
         QueueingConsumer.Delivery delivery = null;
@@ -310,8 +302,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 
         if (delivery != null) {
             log.trace("RPC response received.");
-
-            if (delivery.getProperties().getCorrelationId().equals(corrId)) {
+            if (delivery.getProperties().getCorrelationId().equals(rpcDetails.getBasicProperties().getCorrelationId())) {
                 log.trace("Correlation ids are equal.");
                 channel.basicCancel(consumer.getConsumerTag());
 //
@@ -327,9 +318,21 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         channel.queueUnbind(replyQueueName, exchangeName, replyQueueName);
         channel.queueDelete(replyQueueName);
         if (config.isLogRpcTime() && stopWatch != null) {
-            stopWatch.stopAndPublish(new RabbitMQDeliveryDetails(new Envelope(0, true, exchangeName, key), props, "temp-rpc"));
+            stopWatch.stopAndPublish(rpcDetails);
         }
         log.debug("Received: {}", new String(delivery.getBody()));
         return objectReader.readValue(delivery.getBody());
+    }
+
+    private RabbitMQDeliveryDetails buildRpcRabbitMQDeliveryDetails(String exchangeName, String key, String replyQueueName, String traceId ) {
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(RpcStopWatch.TRACE_ID, traceId);
+        AMQP.BasicProperties props = new AMQP.BasicProperties.Builder()
+                .correlationId(UUID.randomUUID().toString())
+                .replyTo(replyQueueName)
+                .headers(headers)
+                .build();
+
+        return new RabbitMQDeliveryDetails(new Envelope(0, true, exchangeName, key), props, "temp-rpc");
     }
 }

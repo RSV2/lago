@@ -90,4 +90,6 @@ class LagoSpec extends Specification {
         widget.count == 5
         widget.name == "RPC Test Widget"
     }
+
+
 }
