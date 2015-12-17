@@ -1,5 +1,6 @@
 package com.thirdchannel.rabbitmq.consumers
 
+import com.thirdchannel.rabbitmq.ApiRpcConsumer
 import com.thirdchannel.rabbitmq.Lago
 import com.thirdchannel.rabbitmq.config.QueueConsumerConfig
 import com.thirdchannel.rabbitmq.messages.ApiResponse

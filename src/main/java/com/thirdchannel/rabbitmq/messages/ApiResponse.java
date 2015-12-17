@@ -1,8 +1,6 @@
 package com.thirdchannel.rabbitmq.messages;
 
-import com.thirdchannel.rabbitmq.consumers.EventConsumer;
-import com.thirdchannel.rabbitmq.consumers.LagoRpcConsumer;
-import com.thirdchannel.rabbitmq.consumers.RpcConsumer;
+import com.thirdchannel.rabbitmq.interfaces.EventConsumer;
 
 import java.util.ArrayList;
 import java.util.List;

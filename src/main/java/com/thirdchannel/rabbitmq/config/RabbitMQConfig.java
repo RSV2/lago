@@ -1,6 +1,6 @@
 package com.thirdchannel.rabbitmq.config;
 
-import com.thirdchannel.rabbitmq.consumers.EventConsumer;
+import com.thirdchannel.rabbitmq.interfaces.EventConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,7 +164,7 @@ public class RabbitMQConfig {
         log.debug("Looking for Consumer with name " + consumer.getClass().getSimpleName());
         for (ExchangeConfig exchangeConfig : this.getExchanges()) {
             for (QueueConsumerConfig queueConsumerConfig : exchangeConfig.getQueues()) {
-                if (factoryName.toLowerCase().startsWith(queueConsumerConfig.getFactory().toLowerCase())) {
+                if (factoryName.toLowerCase().startsWith(queueConsumerConfig.getConsumer().toLowerCase())) {
                     log.debug("Configuration located for Consumer: " + factoryName);
                     foundQueueConsumerConfig = queueConsumerConfig;
                     // set the exchange name on the lower level config object to avoid having to find a way to return two objects

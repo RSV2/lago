@@ -1,10 +1,9 @@
-package com.thirdchannel.rabbitmq.consumers;
+package com.thirdchannel.rabbitmq.interfaces;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
 import com.thirdchannel.rabbitmq.RabbitMQDeliveryDetails;
 import com.thirdchannel.rabbitmq.config.QueueConsumerConfig;
-import com.thirdchannel.rabbitmq.interfaces.Lago;
 
 /**
  * @author Steve Pember

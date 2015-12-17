@@ -1,4 +1,4 @@
-package com.thirdchannel.rabbitmq.consumers;
+package com.thirdchannel.rabbitmq.interfaces;
 
 import com.thirdchannel.rabbitmq.RabbitMQDeliveryDetails;
 

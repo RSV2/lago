@@ -14,7 +14,7 @@ public class QueueConsumerConfig {
     private boolean autoAck = true;
     private boolean logTime = true; // if true, will log processing time for each request on this consumer
 
-    private String factory;
+    private String consumer;
 
     public boolean isAutoAck() {
         return autoAck;
@@ -64,12 +64,12 @@ public class QueueConsumerConfig {
         this.key = key;
     }
 
-    public String getFactory() {
-        return factory;
+    public String getConsumer() {
+        return consumer;
     }
 
-    public void setFactory(String factory) {
-        this.factory = factory;
+    public void setConsumer(String consumer) {
+        this.consumer = consumer;
     }
 
     public String getExchangeName() {

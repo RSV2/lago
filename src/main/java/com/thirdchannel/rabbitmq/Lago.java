@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.rabbitmq.client.*;
 import com.thirdchannel.rabbitmq.config.ExchangeConfig;
 import com.thirdchannel.rabbitmq.config.RabbitMQConfig;
-import com.thirdchannel.rabbitmq.consumers.EventConsumer;
 import com.thirdchannel.rabbitmq.exceptions.LagoDefaultExceptionHandler;
+import com.thirdchannel.rabbitmq.interfaces.EventConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -234,7 +234,32 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     }
 
 
+    /**
+     *
+     * @param exchangeName
+     * @param key
+     * @param message
+     * @param clazz
+     * @param channel
+     * @return
+     * @throws IOException
+     */
     public Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel) throws IOException {
+        return rpc(exchangeName, key, message, clazz, channel, UUID.randomUUID().toString());
+    }
+
+    /**
+     *
+     * @param exchangeName
+     * @param key
+     * @param message
+     * @param clazz
+     * @param channel
+     * @param spanId
+     * @return
+     * @throws IOException
+     */
+    public Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel, String spanId) throws IOException {
         // to do an RPC (synchronous, in this case) in RabbitMQ, we must do the following:
         // 1. create a unique response queue for the rpc call
         // 2. create a new channel for the queue //todo: eventually make this optional
@@ -251,8 +276,8 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         // * I cannot find any documentation on how to use them, all searches for things like 'rabbitmq java client channel rpc' result in
         //      documentation about how to programatically do an rpc call (e.g. what we do here).
         // * The official java rabbitmq documentation also says to do what we do here.
-        long start = 0;
-        if (config.isLogRpcTime()) {start = new Date().getTime();}
+        RpcStopWatch stopWatch = null;
+        if (config.isLogRpcTime()) {stopWatch = new RpcStopWatch().start();}
 
         ObjectReader objectReader = OBJECT_MAPPER.readerFor(clazz);
         String replyQueueName = channel.queueDeclare().getQueue();
@@ -264,10 +289,12 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         channel.basicConsume(replyQueueName, true, consumer);
 
         String corrId = UUID.randomUUID().toString();
-
+        Map<String, Object> headers = new HashMap<String, Object>();
+        headers.put(RpcStopWatch.TRACE_ID, spanId);
         AMQP.BasicProperties props = new AMQP.BasicProperties.Builder()
                 .correlationId(corrId)
                 .replyTo(replyQueueName)
+                .headers(headers)
                 .build();
         // then publish the query
         publish(exchangeName, key, message, props, channel);
@@ -299,9 +326,8 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 //        // we must clean up!
         channel.queueUnbind(replyQueueName, exchangeName, replyQueueName);
         channel.queueDelete(replyQueueName);
-        if (config.isLogRpcTime()) {
-            long finish = new Date().getTime();
-            log.info("RPC complete in " + (finish-start) +"ms. key: " + key + ", correlation: " + delivery.getProperties().getCorrelationId());
+        if (config.isLogRpcTime() && stopWatch != null) {
+            stopWatch.stopAndPublish(new RabbitMQDeliveryDetails(new Envelope(0, true, exchangeName, key), props, "temp-rpc"));
         }
         log.debug("Received: {}", new String(delivery.getBody()));
         return objectReader.readValue(delivery.getBody());

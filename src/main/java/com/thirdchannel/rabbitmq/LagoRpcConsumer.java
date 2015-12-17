@@ -1,8 +1,7 @@
-package com.thirdchannel.rabbitmq.consumers;
+package com.thirdchannel.rabbitmq;
 
 import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.BasicProperties;
-import com.thirdchannel.rabbitmq.RabbitMQDeliveryDetails;
+import com.thirdchannel.rabbitmq.interfaces.RpcConsumer;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.Date;
@@ -16,8 +15,8 @@ public abstract class LagoRpcConsumer<M, R> extends LagoEventConsumer<M> impleme
 
     @Override
     public boolean handleMessage(M data, RabbitMQDeliveryDetails rabbitMQDeliveryDetails) {
-        long start = 0;
-        if (getConfig().isLogTime()) {start = new Date().getTime();}
+        RpcStopWatch stopWatch = null;
+        if (getConfig().isLogTime()) {stopWatch = new RpcStopWatch("RPC proccessed").start();}
 
         R response = handleRPC(data, rabbitMQDeliveryDetails);
         AMQP.BasicProperties replyProps = new AMQP.BasicProperties.Builder()
@@ -29,31 +28,12 @@ public abstract class LagoRpcConsumer<M, R> extends LagoEventConsumer<M> impleme
         // publish with the replyTo as the topic / Routing key on the same channel that this consumer is listening on
         // if we do not specify, the service will use the main channel, which may not be what we want
         getLago().publish(rabbitMQDeliveryDetails.getEnvelope().getExchange(), replyTo, response, replyProps);
-        log.info("Log time? " + getConfig().isLogTime());
-        if (getConfig().isLogTime()) {
-            logTime(start, rabbitMQDeliveryDetails);
+
+        if (getConfig().isLogTime() && stopWatch != null) {
+            stopWatch.stopAndPublish(rabbitMQDeliveryDetails);
         }
         return true;
 
-    }
-
-    private void logTime(long start, RabbitMQDeliveryDetails rabbitMQDeliveryDetails) {
-        StringBuilder builder = new StringBuilder();
-        String spanId = "unknown";
-        Map<String, Object> headers = rabbitMQDeliveryDetails.getBasicProperties().getHeaders();
-        if (headers != null && headers.containsKey("spanId")) {
-            spanId = headers.get("spanId").toString();
-        }
-        builder.append("RPC processing complete: [")
-                .append(spanId)
-                .append("] [")
-                .append(rabbitMQDeliveryDetails.getBasicProperties().getCorrelationId())
-                .append("] [")
-                .append(rabbitMQDeliveryDetails.getEnvelope().getRoutingKey())
-                .append("] [")
-                .append(new Date().getTime() - start)
-                .append("ms]");
-        log.info(builder.toString());
     }
 
     @Override

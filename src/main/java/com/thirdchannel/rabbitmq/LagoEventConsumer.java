@@ -1,12 +1,12 @@
-package com.thirdchannel.rabbitmq.consumers;
+package com.thirdchannel.rabbitmq;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownSignalException;
-import com.thirdchannel.rabbitmq.RabbitMQDeliveryDetails;
 import com.thirdchannel.rabbitmq.config.QueueConsumerConfig;
+import com.thirdchannel.rabbitmq.interfaces.EventConsumer;
 import com.thirdchannel.rabbitmq.interfaces.Lago;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;

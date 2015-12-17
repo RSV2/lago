@@ -1,11 +1,8 @@
-package com.thirdchannel.rabbitmq.consumers;
+package com.thirdchannel.rabbitmq;
 
-import com.thirdchannel.rabbitmq.RabbitMQDeliveryDetails;
+import com.thirdchannel.rabbitmq.interfaces.EventConsumer;
+import com.thirdchannel.rabbitmq.interfaces.RpcConsumer;
 import com.thirdchannel.rabbitmq.messages.ApiResponse;
-import com.thirdchannel.rabbitmq.messages.ConsumerApiResponse;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author Steve Pember

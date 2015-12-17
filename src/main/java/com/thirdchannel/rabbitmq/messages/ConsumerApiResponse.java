@@ -1,18 +1,15 @@
 package com.thirdchannel.rabbitmq.messages;
 
-import com.thirdchannel.rabbitmq.consumers.EventConsumer;
-import com.thirdchannel.rabbitmq.consumers.LagoRpcConsumer;
-import com.thirdchannel.rabbitmq.consumers.RpcConsumer;
+import com.thirdchannel.rabbitmq.interfaces.EventConsumer;
+import com.thirdchannel.rabbitmq.LagoRpcConsumer;
+import com.thirdchannel.rabbitmq.interfaces.RpcConsumer;
 
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**

@@ -1,7 +1,7 @@
 package com.thirdchannel.rabbitmq.mock
 
 import com.thirdchannel.rabbitmq.RabbitMQDeliveryDetails
-import com.thirdchannel.rabbitmq.consumers.LagoRpcConsumer
+import com.thirdchannel.rabbitmq.LagoRpcConsumer
 
 /**
  * @author Steve Pember

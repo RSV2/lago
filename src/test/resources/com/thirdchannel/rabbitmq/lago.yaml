@@ -18,18 +18,18 @@ exchanges:
         autoDelete: true
         autoAck: true
         key: foo.bar
-        factory: widgetConsumer
+        consumer: widgetConsumer
       -
         name: multi
         count: 3
         key: multi.foo
-        factory: multiConsumer
+        consumer: multiConsumer
       -
         name: rpc-test
         count: 2
         autoAck: true
         key: "widget.read"
-        factory: widgetRPC
+        consumer: widgetRPC
   -
     name: "mailbox"
     type: direct

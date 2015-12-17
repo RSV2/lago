@@ -28,7 +28,7 @@ class PropertiesManager {
         try {
             Yaml yaml = new Yaml(new Constructor(RabbitMQConfig.class));
             RabbitMQConfig data = (RabbitMQConfig)yaml.load(input);
-            log.info("Loaded: {}", data.toString());
+            log.info("RabbitMQ configuration loaded");
             return data;
         } catch(YAMLException ye) {
             log.error("Could not load configuration: ", ye);

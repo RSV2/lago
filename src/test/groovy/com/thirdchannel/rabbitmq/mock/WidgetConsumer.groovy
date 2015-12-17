@@ -1,7 +1,7 @@
 package com.thirdchannel.rabbitmq.mock
 
 import com.thirdchannel.rabbitmq.RabbitMQDeliveryDetails
-import com.thirdchannel.rabbitmq.consumers.LagoEventConsumer
+import com.thirdchannel.rabbitmq.LagoEventConsumer
 import spock.util.concurrent.BlockingVariable
 
 /**

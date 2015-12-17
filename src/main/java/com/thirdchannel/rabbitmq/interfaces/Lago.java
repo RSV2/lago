@@ -1,7 +1,6 @@
 package com.thirdchannel.rabbitmq.interfaces;
 
 import com.rabbitmq.client.*;
-import com.thirdchannel.rabbitmq.consumers.EventConsumer;
 
 import java.io.IOException;
 import java.util.List;
