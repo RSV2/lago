@@ -1,5 +1,8 @@
 package com.thirdchannel.rabbitmq.config;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * @author Steve Pember
  */
@@ -7,7 +10,7 @@ public class QueueConsumerConfig {
 
     private String name = "";
     private int count = 1;
-    private String key = "";
+    private List<String> keys = new ArrayList<>();
     private String exchangeName = "";
     private boolean durable = false;
     private boolean autoDelete = false;
@@ -56,12 +59,12 @@ public class QueueConsumerConfig {
         this.autoDelete = autoDelete;
     }
 
-    public String getKey() {
-        return key;
+    public List<String> getKeys() {
+        return keys;
     }
 
-    public void setKey(String key) {
-        this.key = key;
+    public void setKeys(List<String> keys) {
+        this.keys = keys;
     }
 
     public String getConsumer() {

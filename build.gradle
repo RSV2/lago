@@ -11,6 +11,7 @@
 apply plugin: 'java'
 apply plugin: 'groovy'
 apply plugin: 'jacoco'
+apply plugin: 'maven'
 
 // In this section you declare where to find the dependencies of your project
 repositories {
@@ -18,6 +19,21 @@ repositories {
     jcenter()
     mavenCentral()
 }
+
+// UPDATE THE VERSION!
+group = 'com.thirdchannel'
+version = '0.0.1-SNAPSHOT'
+
+ext.isSnapshot = version.contains('SNAPSHOT')
+
+jar {
+    manifest {
+        attributes 'Implementation-Title':  'Lago',
+                'Implementation-Version': version,
+                'Specification-Version':  version
+    }
+}
+
 
 jacoco {
     toolVersion = "0.7.5.201505241946"

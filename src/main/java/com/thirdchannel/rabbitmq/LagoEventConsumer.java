@@ -81,7 +81,7 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
 
     @Override
     public boolean isConfigured() {
-        return getConfig() != null && !StringUtils.isEmpty(getQueueName()) && !StringUtils.isEmpty(config.getExchangeName()) && !StringUtils.isEmpty(config.getKey());
+        return getConfig() != null && !StringUtils.isEmpty(getQueueName()) && !StringUtils.isEmpty(config.getExchangeName()) && config.getKeys().size() > 0;
     }
 
 

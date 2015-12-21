@@ -88,7 +88,11 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
                     null
             );
             consumer.setLago(this);
-            consumer.getChannel().queueBind(consumer.getQueueName(), consumer.getConfig().getExchangeName(), consumer.getConfig().getKey());
+            for(String key : consumer.getConfig().getKeys()) {
+                // bind the queue to each key
+                consumer.getChannel().queueBind(consumer.getQueueName(), consumer.getConfig().getExchangeName(), key);
+            }
+            // but ony one bind for the consumer in general
             consumer.getChannel().basicConsume(consumer.getQueueName(), true,
                     consumer.getClass().getSimpleName() + "-" + (count + 1), consumer);
             registeredConsumers.add(consumer);

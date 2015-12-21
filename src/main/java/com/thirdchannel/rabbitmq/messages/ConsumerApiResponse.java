@@ -10,6 +10,7 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,7 +19,7 @@ import java.util.Map;
 public class ConsumerApiResponse {
 
     String exchange;
-    String key;
+    List<String> keys;
 
     Map<String, String> in = new HashMap<String,String>();
     Map<String, String> out = new HashMap<String,String>();
@@ -28,7 +29,7 @@ public class ConsumerApiResponse {
 
     ConsumerApiResponse(EventConsumer consumer) {
         setExchange(consumer.getConfig().getExchangeName());
-        setKey(consumer.getConfig().getKey());
+        setKeys(consumer.getConfig().getKeys());
 
         Class m = consumer.getMessageClass();
         setIn(exportFields(m));
@@ -68,12 +69,12 @@ public class ConsumerApiResponse {
         this.exchange = exchange;
     }
 
-    public String getKey() {
-        return key;
+    public List<String> getKeys() {
+        return keys;
     }
 
-    public void setKey(String key) {
-        this.key = key;
+    public void setKeys(List<String> keys) {
+        this.keys = keys;
     }
 
     public Map<String, String> getIn() {

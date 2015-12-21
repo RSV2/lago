@@ -34,7 +34,7 @@ class LagoSetupSpec extends Specification {
         consumer.config.autoDelete
         !consumer.config.durable
         consumer.config.count == 1
-        consumer.config.key == "foo.bar"
+        consumer.config.keys == ["foo.bar"]
         lago.getRegisteredConsumers().size() == 1
     }
 
@@ -58,7 +58,7 @@ class LagoSetupSpec extends Specification {
         !consumer.config.autoDelete
         !consumer.config.durable
         consumer.config.count == 0
-        consumer.config.key == ""
+        consumer.config.keys == []
     }
 
     void "Connecting without specifiying informmation should use the config or environment var "() {

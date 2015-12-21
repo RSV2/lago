@@ -17,18 +17,21 @@ exchanges:
         durable: false
         autoDelete: true
         autoAck: true
-        key: foo.bar
+        keys:
+          - foo.bar
         consumer: widgetConsumer
       -
         name: multi
         count: 3
-        key: multi.foo
+        keys:
+          - multi.foo
         consumer: multiConsumer
       -
         name: rpc-test
         count: 2
         autoAck: true
-        key: "widget.read"
+        keys:
+          - "widget.read"
         consumer: widgetRPC
   -
     name: "mailbox"
