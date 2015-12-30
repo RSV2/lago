@@ -7,10 +7,7 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 import org.yaml.snakeyaml.error.YAMLException;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
 
@@ -20,20 +17,22 @@ import java.net.URL;
 class PropertiesManager {
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
-    public RabbitMQConfig load() throws FileNotFoundException, URISyntaxException {
-        URL url = PropertiesManager.class.getResource("lago.yaml");
+    public RabbitMQConfig load() throws FileNotFoundException {
 
-        File file = new File(url.toURI());
-        InputStream input = new FileInputStream(file);
+        InputStream input = PropertiesManager.class.getResourceAsStream("/lago.yaml");
+        if (input == null) {
+            throw new FileNotFoundException("Could not find lago.yaml on the classpath");
+        }
+
         try {
             Yaml yaml = new Yaml(new Constructor(RabbitMQConfig.class));
             RabbitMQConfig data = (RabbitMQConfig)yaml.load(input);
             log.info("RabbitMQ configuration loaded");
+            input.close();
             return data;
-        } catch(YAMLException ye) {
+        } catch(YAMLException | IOException ye) {
             log.error("Could not load configuration: ", ye);
             return null;
         }
-
     }
 }

@@ -45,12 +45,11 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 
 
     protected void loadConfig() {
+
         try {
             config = propertiesManager.load();
         } catch (FileNotFoundException e) {
             log.error("No config file 'lago.yaml' found on the classpath");
-        } catch (URISyntaxException e) {
-            log.error("Invalid URI signature for the path to the config file.");
         }
     }
 
