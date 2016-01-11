@@ -1,0 +1,61 @@
+import org.gradle.api.publish.maven.MavenPublication
+
+apply plugin: "maven-publish"
+apply plugin: "com.jfrog.bintray"
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    description "An archive of the source code"
+    classifier "sources"
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    description "An archive of the JavaDocs"
+    classifier "javadoc"
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar, javadocJar
+}
+
+publish.dependsOn assemble
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+        }
+    }
+}
+
+bintray {
+
+    user = project.hasProperty('bintrayUsername') ? project.getProperty('bintrayUsername') : ''
+    key = project.hasProperty('bintrayApiKey') ? project.getProperty('bintrayApiKey') : ''
+
+    publications = [ 'mavenJava' ]
+
+    dryRun = false
+    publish = true
+
+    pkg {
+        repo = 'Tools'
+        name = "${project.name}"
+        userOrg = 'thirdchannel'
+        desc = 'A small library for working with RabbitMq'
+        websiteUrl = 'https://github.com/RSV2/lago'
+        issueTrackerUrl = 'https://github.com/RSV2/lago/issues'
+        vcsUrl = 'https://github.com/RSV2/lago.git'
+        licenses = [ 'Apache-2.0' ]
+        labels = [ 'rabbitMQ', 'amqp' ]
+        publicDownloadNumbers = true
+        version {
+            name = "${project.version}"
+            vcsTag = "${version}"
+        }
+    }
+}
+

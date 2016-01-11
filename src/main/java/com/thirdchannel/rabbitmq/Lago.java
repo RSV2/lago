@@ -144,7 +144,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     }
 
     /**
-     * Connects using a {@see ConnectionFactory}, allowing for custom configuration by the service.
+     * Connects using a ConnectionFactory, allowing for custom configuration by the service.
      * Warning: no configuration will be provided. Make sure that you've set values like automatic recovery
      *
      * @param factory the factory
@@ -245,7 +245,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @param clazz Clazz The class of the expected return data
      * @param channel Channel Channel to broadcast on
      * @return Object Will be an instance of clazz
-     * @throws IOException
+     * @throws IOException If unable to connect or bind the queue
      */
     public Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel) throws IOException {
         return rpc(exchangeName, key, message, clazz, channel, UUID.randomUUID().toString());
@@ -258,8 +258,9 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @param message Object representing the outgoing data. Will typically encapsulate some sort of query information
      * @param clazz Clazz The class of the expected return data
      * @param channel Channel Channel to broadcast on
+     * @param traceId A unique identifier for tracing communications
      * @return Object Will be an instance of clazz
-     * @throws IOException
+     * @throws IOException If unable to connect or bind the queue
      */
     public Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel, String traceId) throws IOException {
         // to do an RPC (synchronous, in this case) in RabbitMQ, we must do the following:

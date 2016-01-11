@@ -29,7 +29,7 @@ public interface EventConsumer<M> extends Consumer {
 
     /**
      * Like 'copy', but meant to be used to handle things like dependency injection;
-     * @return
+     * @return EventConsumer a duplicate of the original
      */
     EventConsumer<M> spawn();
 
