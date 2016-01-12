@@ -38,6 +38,9 @@ repositories {
 }
 
 // UPDATE THE VERSION!
+// uncomment the following in order to work locally with snapshots (BinTray does not support them)
+// increment the version beyond what the current version is, add the -SNAPSHOT flag, and use 'gradle install'
+// for local work
 //group = 'com.thirdchannel'
 //version = '0.1.2-SNAPSHOT'
 //
