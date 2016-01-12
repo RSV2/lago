@@ -18,8 +18,8 @@ class PropertiesManager {
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
     public RabbitMQConfig load() throws FileNotFoundException {
-
-        InputStream input = PropertiesManager.class.getResourceAsStream("/lago.yaml");
+        //InputStream input = PropertiesManager.class.getClassLoader().getResourceAsStream("lago.yaml");
+        InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("lago.yaml");
         if (input == null) {
             throw new FileNotFoundException("Could not find lago.yaml on the classpath");
         }
