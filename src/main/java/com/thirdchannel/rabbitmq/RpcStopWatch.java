@@ -44,7 +44,7 @@ class RpcStopWatch {
         StringBuilder builder = new StringBuilder();
         String spanId = "unknown";
         Map<String, Object> headers = rabbitMQDeliveryDetails.getBasicProperties().getHeaders();
-        if (headers != null && headers.containsKey(TRACE_ID)) {
+        if (headers != null && headers.containsKey(TRACE_ID) && headers.get(TRACE_ID) != null) {
             spanId = headers.get(TRACE_ID).toString();
         }
         builder.append(prefix).append(" complete: [")

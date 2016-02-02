@@ -16,7 +16,7 @@ public abstract class LagoRpcConsumer<M, R> extends LagoEventConsumer<M> impleme
     @Override
     public boolean handleMessage(M data, RabbitMQDeliveryDetails rabbitMQDeliveryDetails) {
         RpcStopWatch stopWatch = null;
-        if (getConfig().isLogTime()) {stopWatch = new RpcStopWatch("RPC proccessed").start();}
+        if (getConfig().isLogTime()) {stopWatch = new RpcStopWatch("RPC handling").start();}
 
         R response = handleRPC(data, rabbitMQDeliveryDetails);
         AMQP.BasicProperties replyProps = new AMQP.BasicProperties.Builder()
