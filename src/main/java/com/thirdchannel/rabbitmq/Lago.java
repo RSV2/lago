@@ -287,7 +287,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         if (config.isLogRpcTime()) {stopWatch = new RpcStopWatch().start();}
 
         ObjectReader objectReader = OBJECT_MAPPER.readerFor(clazz);
-        String replyQueueName = channel.queueDeclare().getQueue();
+        String replyQueueName = channel.queueDeclare("", false, false, true, null).getQueue();
         log.info("Listening for rpc response on " + replyQueueName);
 
         QueueingConsumer consumer = new QueueingConsumer(channel);
