@@ -80,6 +80,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 
     private void bindConsumer(EventConsumer consumer, int count) {
         consumer.setChannel(createChannel());
+        consumer.setQueueName(consumer.getConfig().getName());
 
         try {
             log.debug("About to make queue with name: " + consumer.getQueueName());
