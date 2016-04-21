@@ -131,7 +131,7 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
         boolean deliveryStatus = true;
 
         try {
-            if (!handleMessage(OBJECT_MAPPER.readValue(body, getMessageClass()), deliveryDetails)) {
+            if (!handleMessage(getObjectMapper().readValue(body, getMessageClass()), deliveryDetails)) {
                 deliveryStatus = false;
             }
         }
@@ -142,6 +142,10 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
         decideToAck(envelope, deliveryStatus);
         log.debug("Message consumed");
 
+    }
+
+    public ObjectMapper getObjectMapper() {
+        return OBJECT_MAPPER;
     }
 
     private void decideToAck(Envelope envelope, boolean deliveryStatus) throws IOException {
