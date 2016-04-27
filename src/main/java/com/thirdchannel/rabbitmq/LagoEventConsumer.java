@@ -26,7 +26,6 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
     private QueueConsumerConfig config;
     private String queueName = this.getClass().getSimpleName().toLowerCase();
 
-    private static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private Class<M> messageType;
 
 
@@ -144,8 +143,9 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
 
     }
 
+
     public ObjectMapper getObjectMapper() {
-        return OBJECT_MAPPER;
+        return getLago().getObjectMapper();
     }
 
     private void decideToAck(Envelope envelope, boolean deliveryStatus) throws IOException {

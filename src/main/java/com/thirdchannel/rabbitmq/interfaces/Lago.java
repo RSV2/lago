@@ -1,5 +1,6 @@
 package com.thirdchannel.rabbitmq.interfaces;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.*;
 
 import java.io.IOException;
@@ -19,6 +20,9 @@ public interface Lago {
     Connection connect(ConnectionFactory factory);
     Channel createChannel();
     Channel getChannel();
+
+    ObjectMapper getObjectMapper();
+    void setObjectMapper(ObjectMapper objectMapper);
 
     void setExceptionHandler(ExceptionHandler handler);
     List<EventConsumer> getRegisteredConsumers();
