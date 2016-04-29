@@ -26,7 +26,7 @@ import java.util.concurrent.TimeoutException;
 public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
-    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private Connection connection;
     private Channel channel; // create a local channel just for Lago
@@ -43,6 +43,14 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         loadConfig();
     }
 
+    public ObjectMapper getObjectMapper() {
+        return OBJECT_MAPPER;
+    }
+
+    public void setObjectMapper(ObjectMapper mapper) {
+        OBJECT_MAPPER = mapper;
+    }
+
 
     protected void loadConfig() {
 
@@ -56,6 +64,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     public RabbitMQConfig getConfig() {
         return config;
     }
+
 
     public void registerConsumer(EventConsumer consumer) {
         if (consumer.isConfigured()) {
