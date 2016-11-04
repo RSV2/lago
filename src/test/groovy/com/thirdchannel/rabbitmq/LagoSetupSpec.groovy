@@ -36,6 +36,7 @@ class LagoSetupSpec extends Specification {
         consumer.config.count == 1
         consumer.config.keys == ["foo.bar"]
         consumer.config.name == "test1"
+        consumer.config.prefetch == 1
         consumer.getQueueName() == "test1"
         lago.getRegisteredConsumers().size() == 1
     }
