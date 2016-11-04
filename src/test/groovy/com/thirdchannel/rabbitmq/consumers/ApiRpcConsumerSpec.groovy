@@ -23,7 +23,7 @@ class ApiRpcConsumerSpec extends Specification {
         lago.connect()
 
 
-        QueueConsumerConfig config = new QueueConsumerConfig(exchangeName: "oneTopic", keys: ["api:lago"], count: 1 )
+        QueueConsumerConfig config = new QueueConsumerConfig(exchangeName: "oneTopic", keys: ["api:lago"], count: 1, prefetch: 2)
         apiRpcConsumer = new ApiRpcConsumer()
         apiRpcConsumer.setConfig(config)
     }

@@ -16,6 +16,7 @@ public class QueueConsumerConfig {
     private boolean autoDelete = false;
     private boolean autoAck = true;
     private boolean logTime = true; // if true, will log processing time for each request on this consumer
+    private int prefetch = 1;
 
     private String consumer;
 
@@ -89,5 +90,13 @@ public class QueueConsumerConfig {
 
     public void setLogTime(boolean logTime) {
         this.logTime = logTime;
+    }
+
+    public int getPrefetch() {
+        return prefetch;
+    }
+
+    public void setPrefetch(int prefetch) {
+        this.prefetch = prefetch;
     }
 }

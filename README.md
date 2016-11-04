@@ -1,8 +1,10 @@
-#Lago
-#### A minimal convenience layer on the RabbitMQ Java api
+# Lago
+
+## A minimal convenience layer on the RabbitMQ Java api
+
 The taxonomic order of rabbits is 'Lagomorph' (along with Pikas). Lago is, incidentally, Greek for 'hare'.
 
-###Goals
+## Goals
 
 The goal of Lago is to provide a minimal abstraction layer on top of the RabbitMQ java client that facilitates connection, message transfer, and construction of consumers... all without framework dependencies.
 
