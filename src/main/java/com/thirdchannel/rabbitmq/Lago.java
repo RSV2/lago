@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.rabbitmq.client.*;
 import com.thirdchannel.rabbitmq.config.ExchangeConfig;
+import com.thirdchannel.rabbitmq.config.QueueConsumerConfig;
 import com.thirdchannel.rabbitmq.config.RabbitMQConfig;
 import com.thirdchannel.rabbitmq.exceptions.LagoDefaultExceptionHandler;
 import com.thirdchannel.rabbitmq.interfaces.EventConsumer;
@@ -50,8 +51,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     public void setObjectMapper(ObjectMapper mapper) {
         OBJECT_MAPPER = mapper;
     }
-
-
+    
     protected void loadConfig() {
 
         try {
@@ -64,7 +64,6 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     public RabbitMQConfig getConfig() {
         return config;
     }
-
 
     public void registerConsumer(EventConsumer consumer) {
         if (consumer.isConfigured()) {
@@ -82,9 +81,6 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         } else {
             log.warn("Count of less then one provided for Consumer: " + consumer.getClass().getSimpleName());
         }
-
-
-
     }
 
     private void bindConsumer(EventConsumer consumer, int count) {
@@ -93,27 +89,40 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 
         try {
             log.debug("About to make queue with name: " + consumer.getQueueName());
-            consumer.getChannel().queueDeclare(
+            Channel channel = consumer.getChannel();
+
+            QueueConsumerConfig queueConsumerConfig = consumer.getConfig();
+
+            channel.basicQos(queueConsumerConfig.getPrefetch());
+
+            channel.queueDeclare(
                     consumer.getQueueName(),
-                    consumer.getConfig().isDurable(),
-                    consumer.getConfig().getCount() > 1,
-                    consumer.getConfig().isAutoDelete(),
+                    queueConsumerConfig.isDurable(),
+                    queueConsumerConfig.getCount() > 1,
+                    queueConsumerConfig.isAutoDelete(),
                     null
             );
+
             consumer.setLago(this);
-            for(String key : consumer.getConfig().getKeys()) {
+
+            for(String key : queueConsumerConfig.getKeys()) {
                 // bind the queue to each key
-                consumer.getChannel().queueBind(consumer.getQueueName(), consumer.getConfig().getExchangeName(), key);
+                channel.queueBind(consumer.getQueueName(), queueConsumerConfig.getExchangeName(), key);
             }
+
             // but ony one bind for the consumer in general
-            consumer.getChannel().basicConsume(consumer.getQueueName(), consumer.getConfig().isAutoAck(),
-                    consumer.getClass().getSimpleName() + "-" + (count + 1), consumer);
+            channel.basicConsume(
+                    consumer.getQueueName(),
+                    queueConsumerConfig.isAutoAck(),
+                    consumer.getClass().getSimpleName() + "-" + (count + 1),
+                    consumer
+            );
+
             registeredConsumers.add(consumer);
         } catch (IOException e) {
             log.error("Could not declare queue and bind to consumer: " + e.getMessage(), e);
         }
     }
-
 
     public List<EventConsumer> getRegisteredConsumers() {
         return registeredConsumers;
