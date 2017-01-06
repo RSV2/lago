@@ -331,7 +331,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         channel.basicConsume(replyQueueName, true, consumer);
 
         RabbitMQDeliveryDetails rpcDetails = buildRpcRabbitMQDeliveryDetails(exchangeName, key, replyQueueName, traceId, rpcTimeout);
-        log.info("Expiration for RPC: " + rpcDetails.getBasicProperties().getExpiration());
+        log.debug("Expiration for RPC: " + rpcDetails.getBasicProperties().getExpiration());
 
         // then publish the query
         publish(exchangeName, key, message, rpcDetails.getBasicProperties(), channel);
