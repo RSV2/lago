@@ -33,6 +33,13 @@ exchanges:
         keys:
           - "widget.read"
         consumer: widgetRPC
+      -
+        name: rpc-test-collection
+        count: 2
+        autoAck: true
+        keys:
+          - "widgets.read"
+        consumer: widgetListRPC
   -
     name: "mailbox"
     type: direct

@@ -5,6 +5,7 @@ import com.rabbitmq.client.Channel
 import com.thirdchannel.rabbitmq.mock.MockChannel
 import com.thirdchannel.rabbitmq.mock.Widget
 import com.thirdchannel.rabbitmq.mock.WidgetConsumer
+import com.thirdchannel.rabbitmq.mock.WidgetListRPCConsumer
 import com.thirdchannel.rabbitmq.mock.WidgetRPCConsumer
 import spock.lang.Shared
 import spock.lang.Specification
@@ -89,6 +90,26 @@ class LagoSpec extends Specification {
         widget.active
         widget.count == 5
         widget.name == "RPC Test Widget"
+    }
+
+    def "Rpc calls should send and receive JSON collections" () {
+
+        given:
+        lago.registerConsumer(new WidgetListRPCConsumer());
+        lago.registerConsumer(new WidgetConsumer());
+
+
+        when:
+        Channel channel = lago.createChannel()
+        List<Widget> widgets = (List<Widget>)lago.rpc("oneTopic", "widgets.read", [widgetIds: [4, 5]], List.class, Widget.class, channel)
+        channel.close()
+
+        then:
+        widgets != null
+        List.class.isAssignableFrom(widgets.class)
+        Widget.class.isInstance(widgets[0])
+        widgets[0].count == 4
+        widgets[1].count == 5
     }
 
 
