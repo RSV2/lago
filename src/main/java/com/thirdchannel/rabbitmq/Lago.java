@@ -1,7 +1,9 @@
 package com.thirdchannel.rabbitmq;
 
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.rabbitmq.client.*;
 import com.thirdchannel.rabbitmq.config.ExchangeConfig;
 import com.thirdchannel.rabbitmq.config.QueueConsumerConfig;
@@ -27,7 +29,8 @@ import java.util.concurrent.TimeoutException;
 public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
-    public static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .registerModule(new AfterburnerModule());
 
     private Connection connection;
     private Channel channel; // create a local channel just for Lago
@@ -259,6 +262,22 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 
     }
 
+    /**
+     *
+     * @param exchangeName The name of the exchange to publish on
+     * @param key String The routing key to publish on
+     * @param message Object representing the outgoing data. Will typically encapsulate some sort of query information
+     * @param collectionClazz specified when the return data is a Collection. Typically a List
+     * @param clazz Clazz The class of the expected return data
+     * @param channel Channel Channel to broadcast on
+     * @return Object Will be an instance of clazz
+     * @throws IOException If unable to connect or bind the queuetion
+     */
+    public Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel) throws IOException {
+        return rpc(exchangeName, key, message, collectionClazz, clazz, channel, UUID.randomUUID().toString());
+    }
+
+
 
     /**
      *
@@ -271,7 +290,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @throws IOException If unable to connect or bind the queuetion
      */
     public Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel) throws IOException {
-        return rpc(exchangeName, key, message, clazz, channel, UUID.randomUUID().toString());
+        return rpc(exchangeName, key, message, null, clazz, channel, UUID.randomUUID().toString());
     }
 
     /**
@@ -285,7 +304,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @return Object Will be an instance of clazz
      * @throws IOException If unable to connect or bind the queuetion
      */
-    public Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel, String traceId) throws IOException {
+    public Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel, String traceId) throws IOException {
         // to do an RPC (synchronous, in this case) in RabbitMQ, we must do the following:
         // 1. create a unique response queue for the rpc call
         // 2. create a new channel for the queue //todo: eventually make this optional
@@ -305,7 +324,13 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         RpcStopWatch stopWatch = null;
         if (config.isLogRpcTime()) {stopWatch = new RpcStopWatch().start();}
 
-        ObjectReader objectReader = OBJECT_MAPPER.readerFor(clazz);
+        JavaType javaType;
+        if (collectionClazz != null) {
+            javaType = OBJECT_MAPPER.getTypeFactory().constructCollectionLikeType(collectionClazz, clazz);
+        } else {
+            javaType = OBJECT_MAPPER.getTypeFactory().constructType(clazz);
+        }
+        ObjectReader objectReader = OBJECT_MAPPER.readerFor(javaType);
         String replyQueueName = channel.queueDeclare("", false, false, true, null).getQueue();
         log.info("Listening for rpc response on " + replyQueueName);
 
