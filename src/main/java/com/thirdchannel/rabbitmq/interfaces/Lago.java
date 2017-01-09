@@ -33,4 +33,5 @@ public interface Lago {
     void publish(String exchangeName, String key, Object message, AMQP.BasicProperties properties, Channel channel);
     Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel) throws IOException;
     Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel) throws IOException;
+    Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel, String traceId) throws IOException;
 }

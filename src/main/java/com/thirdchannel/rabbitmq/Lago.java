@@ -274,7 +274,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @throws IOException If unable to connect or bind the queuetion
      */
     public Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel) throws IOException {
-        return rpc(exchangeName, key, message, clazz, channel, UUID.randomUUID().toString(), collectionClazz);
+        return rpc(exchangeName, key, message, collectionClazz, clazz, channel, UUID.randomUUID().toString());
     }
 
 
@@ -290,7 +290,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @throws IOException If unable to connect or bind the queuetion
      */
     public Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel) throws IOException {
-        return rpc(exchangeName, key, message, clazz, channel, UUID.randomUUID().toString(), null);
+        return rpc(exchangeName, key, message, null, clazz, channel, UUID.randomUUID().toString());
     }
 
     /**
@@ -304,7 +304,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @return Object Will be an instance of clazz
      * @throws IOException If unable to connect or bind the queuetion
      */
-    public Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel, String traceId, Class<? extends Collection> collectionClazz) throws IOException {
+    public Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel, String traceId) throws IOException {
         // to do an RPC (synchronous, in this case) in RabbitMQ, we must do the following:
         // 1. create a unique response queue for the rpc call
         // 2. create a new channel for the queue //todo: eventually make this optional
