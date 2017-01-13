@@ -23,12 +23,14 @@ exchanges:
       -
         name: multi
         count: 3
+        durable: false
         keys:
           - multi.foo
         consumer: multiConsumer
       -
         name: rpc-test
         count: 2
+        durable: false
         autoAck: true
         keys:
           - "widget.read"
@@ -40,6 +42,14 @@ exchanges:
         keys:
           - "widgets.read"
         consumer: widgetListRPC
+      -
+        name: rpc-timeout-test
+        durable: false
+        autoDelete: true
+        autoAck: true
+        keys:
+          - "timeout.read"
+        consumer: timeoutRPC
   -
     name: "mailbox"
     type: direct

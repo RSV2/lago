@@ -7,6 +7,9 @@ import com.thirdchannel.rabbitmq.mock.Widget
 import com.thirdchannel.rabbitmq.mock.WidgetConsumer
 import com.thirdchannel.rabbitmq.mock.WidgetListRPCConsumer
 import com.thirdchannel.rabbitmq.mock.WidgetRPCConsumer
+import com.thirdchannel.rabbitmq.mock.*
+import groovy.time.TimeCategory
+import groovy.time.TimeDuration
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -112,5 +115,23 @@ class LagoSpec extends Specification {
         widgets[1].count == 5
     }
 
+    void "RPCs can have custom timeouts"(){
+        given:
+        lago.registerConsumer(new TimeoutRPCConsumer())
 
+        when:
+        Channel channel = lago.createChannel()
+        Date start = new Date()
+        try {
+            lago.rpc("oneTopic", 'timeout.read', [widgetId: 6], Widget.class, channel, 1000)
+        } catch(Exception e) {
+            println("Catching deliberate rpc timeout exception")
+        }
+        Date end = new Date()
+
+        then:
+        TimeDuration td = TimeCategory.minus( end, start )
+        td.seconds == 1
+
+    }
 }

@@ -290,7 +290,22 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @throws IOException If unable to connect or bind the queuetion
      */
     public Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel) throws IOException {
-        return rpc(exchangeName, key, message, null, clazz, channel, UUID.randomUUID().toString());
+        return rpc(exchangeName, key, message, clazz, channel, UUID.randomUUID().toString(), null);
+    }
+
+    /**
+     *
+     * @param exchangeName The name of the exchange to publish on
+     * @param key String The routing key to publish on
+     * @param message Object representing the outgoing data. Will typically encapsulate some sort of query information
+     * @param clazz Clazz The class of the expected return data
+     * @param channel Channel Channel to broadcast on
+     * @param rpcTimeout Integer in millis of a custom timeout for a particular RPC
+     * @return Object Will be an instance of clazz
+     * @throws IOException If unable to connect or bind the queuetion
+     */
+    public Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel, Integer rpcTimeout) throws IOException {
+        return rpc(exchangeName, key, message, null, clazz, channel, UUID.randomUUID().toString(), rpcTimeout);
     }
 
     /**
@@ -300,11 +315,12 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @param message Object representing the outgoing data. Will typically encapsulate some sort of query information
      * @param clazz Clazz The class of the expected return data
      * @param channel Channel Channel to broadcas
-     * @param traceId A unique identifier for tracing communicationst on
+     * @param traceId A unique identifier for tracing communications on
+     * @param rpcTimeout Integer in millis of a custom timeout for a particular RPC
      * @return Object Will be an instance of clazz
      * @throws IOException If unable to connect or bind the queuetion
      */
-    public Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel, String traceId) throws IOException {
+    public Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel, String traceId, Integer rpcTimeout) throws IOException {
         // to do an RPC (synchronous, in this case) in RabbitMQ, we must do the following:
         // 1. create a unique response queue for the rpc call
         // 2. create a new channel for the queue //todo: eventually make this optional
@@ -339,14 +355,16 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         channel.queueBind(replyQueueName, exchangeName, replyQueueName);
         channel.basicConsume(replyQueueName, true, consumer);
 
-        RabbitMQDeliveryDetails rpcDetails = buildRpcRabbitMQDeliveryDetails(exchangeName, key, replyQueueName, traceId);
+        RabbitMQDeliveryDetails rpcDetails = buildRpcRabbitMQDeliveryDetails(exchangeName, key, replyQueueName, traceId, rpcTimeout);
+        log.debug("Expiration for RPC: " + rpcDetails.getBasicProperties().getExpiration());
+
         // then publish the query
         publish(exchangeName, key, message, rpcDetails.getBasicProperties(), channel);
         log.debug("Waiting for rpc response delivery on " + key);
 
         QueueingConsumer.Delivery delivery = null;
         try {
-            delivery = consumer.nextDelivery(config.getRpcTimeout());
+            delivery = consumer.nextDelivery(chooseTimeout(rpcTimeout));
         } catch (InterruptedException e) {
             log.error("Thread interrupted while waiting for rpc response:", e);
             delivery = null;
@@ -376,7 +394,15 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         return objectReader.readValue(delivery.getBody());
     }
 
-    private RabbitMQDeliveryDetails buildRpcRabbitMQDeliveryDetails(String exchangeName, String key, String replyQueueName, String traceId ) {
+    private int chooseTimeout(Integer timeoutOverride) {
+        if(timeoutOverride != null) {
+            return timeoutOverride;
+        } else {
+            return config.getRpcTimeout();
+        }
+    }
+
+    private RabbitMQDeliveryDetails buildRpcRabbitMQDeliveryDetails(String exchangeName, String key, String replyQueueName, String traceId, Integer rpcTimeout ) {
         Map<String, Object> headers = new HashMap<>();
         headers.put(RpcStopWatch.TRACE_ID, traceId);
         AMQP.BasicProperties props = new AMQP.BasicProperties.Builder()
@@ -384,6 +410,10 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
                 .replyTo(replyQueueName)
                 .headers(headers)
                 .build();
+
+        if(rpcTimeout != null) {
+            props = props.builder().expiration(rpcTimeout.toString()).build();
+        }
 
         return new RabbitMQDeliveryDetails(new Envelope(0, true, exchangeName, key), props, "temp-rpc");
     }
