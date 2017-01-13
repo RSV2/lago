@@ -339,13 +339,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 
         QueueingConsumer.Delivery delivery = null;
         try {
-            // timeout can be optionally overwritten
-            int timeout = config.getRpcTimeout();
-            if(rpcTimeout != null) {
-                timeout = rpcTimeout;
-            }
-
-            delivery = consumer.nextDelivery(timeout);
+            delivery = consumer.nextDelivery(chooseTimeout(rpcTimeout));
         } catch (InterruptedException e) {
             log.error("Thread interrupted while waiting for rpc response:", e);
             delivery = null;
@@ -373,6 +367,14 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         }
         log.debug("Received: {}", new String(delivery.getBody()));
         return objectReader.readValue(delivery.getBody());
+    }
+
+    private int chooseTimeout(Integer timeoutOverride) {
+        if(timeoutOverride != null) {
+            return timeoutOverride;
+        } else {
+            return config.getRpcTimeout();
+        }
     }
 
     private RabbitMQDeliveryDetails buildRpcRabbitMQDeliveryDetails(String exchangeName, String key, String replyQueueName, String traceId, Integer rpcTimeout ) {
