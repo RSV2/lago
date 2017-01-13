@@ -274,7 +274,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @throws IOException If unable to connect or bind the queuetion
      */
     public Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel) throws IOException {
-        return rpc(exchangeName, key, message, collectionClazz, clazz, channel, UUID.randomUUID().toString());
+        return rpc(exchangeName, key, message, collectionClazz, clazz, channel, UUID.randomUUID().toString(), null);
     }
 
 
@@ -290,7 +290,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @throws IOException If unable to connect or bind the queuetion
      */
     public Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel) throws IOException {
-        return rpc(exchangeName, key, message, clazz, channel, UUID.randomUUID().toString(), null);
+        return rpc(exchangeName, key, message, null, clazz, channel, UUID.randomUUID().toString(), null);
     }
 
     /**
@@ -305,7 +305,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @throws IOException If unable to connect or bind the queuetion
      */
     public Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel, Integer rpcTimeout) throws IOException {
-        return rpc(exchangeName, key, message, null, clazz, channel, UUID.randomUUID().toString(), rpcTimeout);
+        return rpc(exchangeName, key, message, collectionClazz, clazz, channel, UUID.randomUUID().toString(), rpcTimeout);
     }
 
     /**

@@ -43,10 +43,10 @@ repositories {
 // for local work
 //
 //group = 'com.thirdchannel'
-//version = '0.1.6'
-
+//version = '0.1.7'
+//
 //ext.isSnapshot = version.contains('SNAPSHOT')
-
+//
 //jar {
 //    manifest {
 //        attributes 'Implementation-Title':  'Lago',

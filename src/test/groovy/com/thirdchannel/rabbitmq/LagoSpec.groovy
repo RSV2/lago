@@ -123,7 +123,7 @@ class LagoSpec extends Specification {
         Channel channel = lago.createChannel()
         Date start = new Date()
         try {
-            lago.rpc("oneTopic", 'timeout.read', [widgetId: 6], Widget.class, channel, 1000)
+            lago.rpc("oneTopic", 'timeout.read', [widgetId: 6], null, Widget.class, channel, 1000)
         } catch(Exception e) {
             println("Catching deliberate rpc timeout exception")
         }
