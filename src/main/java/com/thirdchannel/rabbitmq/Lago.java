@@ -298,6 +298,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @param exchangeName The name of the exchange to publish on
      * @param key String The routing key to publish on
      * @param message Object representing the outgoing data. Will typically encapsulate some sort of query information
+     * @param collectionClazz this will typically be a List
      * @param clazz Clazz The class of the expected return data
      * @param channel Channel Channel to broadcast on
      * @param rpcTimeout Integer in millis of a custom timeout for a particular RPC
