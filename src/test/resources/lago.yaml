@@ -36,6 +36,13 @@ exchanges:
           - "widget.read"
         consumer: widgetRPC
       -
+        name: rpc-test-collection
+        count: 2
+        autoAck: true
+        keys:
+          - "widgets.read"
+        consumer: widgetListRPC
+      -
         name: rpc-timeout-test
         durable: false
         autoDelete: true

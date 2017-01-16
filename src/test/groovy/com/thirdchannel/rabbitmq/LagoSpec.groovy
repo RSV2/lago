@@ -2,6 +2,11 @@ package com.thirdchannel.rabbitmq
 
 import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.Channel
+import com.thirdchannel.rabbitmq.mock.MockChannel
+import com.thirdchannel.rabbitmq.mock.Widget
+import com.thirdchannel.rabbitmq.mock.WidgetConsumer
+import com.thirdchannel.rabbitmq.mock.WidgetListRPCConsumer
+import com.thirdchannel.rabbitmq.mock.WidgetRPCConsumer
 import com.thirdchannel.rabbitmq.mock.*
 import groovy.time.TimeCategory
 import groovy.time.TimeDuration
@@ -90,6 +95,26 @@ class LagoSpec extends Specification {
         widget.name == "RPC Test Widget"
     }
 
+    def "Rpc calls should send and receive JSON collections" () {
+
+        given:
+        lago.registerConsumer(new WidgetListRPCConsumer());
+        lago.registerConsumer(new WidgetConsumer());
+
+
+        when:
+        Channel channel = lago.createChannel()
+        List<Widget> widgets = (List<Widget>)lago.rpc("oneTopic", "widgets.read", [widgetIds: [4, 5]], List.class, Widget.class, channel)
+        channel.close()
+
+        then:
+        widgets != null
+        List.class.isAssignableFrom(widgets.class)
+        Widget.class.isInstance(widgets[0])
+        widgets[0].count == 4
+        widgets[1].count == 5
+    }
+
     void "RPCs can have custom timeouts"(){
         given:
         lago.registerConsumer(new TimeoutRPCConsumer())
@@ -98,7 +123,7 @@ class LagoSpec extends Specification {
         Channel channel = lago.createChannel()
         Date start = new Date()
         try {
-            lago.rpc("oneTopic", 'timeout.read', [widgetId: 6], Widget.class, channel, 1000)
+            lago.rpc("oneTopic", 'timeout.read', [widgetId: 6], null, Widget.class, channel, 1000)
         } catch(Exception e) {
             println("Catching deliberate rpc timeout exception")
         }
