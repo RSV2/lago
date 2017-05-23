@@ -4,8 +4,8 @@ import com.rabbitmq.client.AMQP;
 import com.thirdchannel.rabbitmq.interfaces.RpcConsumer;
 
 import java.lang.reflect.ParameterizedType;
-import java.util.Date;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Steve Pember
@@ -15,6 +15,7 @@ public abstract class LagoRpcConsumer<M, R> extends LagoEventConsumer<M> impleme
 
     @Override
     public boolean handleMessage(M data, RabbitMQDeliveryDetails rabbitMQDeliveryDetails) {
+        log.info("Receiving RPC request on topic {}", rabbitMQDeliveryDetails.getEnvelope().getRoutingKey());
         RpcStopWatch stopWatch = null;
         if (getConfig().isLogTime()) {stopWatch = new RpcStopWatch("RPC handling").start();}
 
@@ -27,7 +28,13 @@ public abstract class LagoRpcConsumer<M, R> extends LagoEventConsumer<M> impleme
         log.debug("Responding to RPC Query one queue " + replyTo);
         // publish with the replyTo as the topic / Routing key on the same channel that this consumer is listening on
         // if we do not specify, the service will use the main channel, which may not be what we want
-        getLago().publish(rabbitMQDeliveryDetails.getEnvelope().getExchange(), replyTo, response, replyProps);
+        if(getConfig().isBackwardsCompatible()) {
+            List<R> listResponse = new ArrayList<>();
+            listResponse.add(response);
+            getLago().publish(rabbitMQDeliveryDetails.getEnvelope().getExchange(), replyTo, listResponse, replyProps);
+        } else {
+            getLago().publish(rabbitMQDeliveryDetails.getEnvelope().getExchange(), replyTo, response, replyProps);
+        }
 
         if (getConfig().isLogTime() && stopWatch != null) {
             stopWatch.stopAndPublish(rabbitMQDeliveryDetails);

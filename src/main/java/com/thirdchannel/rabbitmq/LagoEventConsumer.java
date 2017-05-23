@@ -1,11 +1,14 @@
 package com.thirdchannel.rabbitmq;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownSignalException;
 import com.thirdchannel.rabbitmq.config.QueueConsumerConfig;
+import com.thirdchannel.rabbitmq.exceptions.RabbitMQSetupException;
 import com.thirdchannel.rabbitmq.interfaces.EventConsumer;
 import com.thirdchannel.rabbitmq.interfaces.Lago;
 import org.apache.commons.lang3.StringUtils;
@@ -14,6 +17,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -33,7 +38,7 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
 
     @SuppressWarnings("unchecked")
     private void setMessageType() {
-        messageType = ((Class) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0]);
+        messageType = ((Class<M>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0]);
         log.trace("Set generic type of " + messageType.getSimpleName());
     }
 
@@ -121,28 +126,44 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
 
     @Override
     public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
-        if (log.isDebugEnabled()) {
-            log.debug("Handling message with topic " + envelope.getRoutingKey() + " on consumerTag " + consumerTag +" and data: " + new String(body));
+        if(log.isInfoEnabled()) {
+            log.info("Handling message with topic {} on consumerTag {} and data: {}", envelope.getRoutingKey(), consumerTag, new String(body));
         }
-
         RabbitMQDeliveryDetails deliveryDetails = new RabbitMQDeliveryDetails(envelope, properties, consumerTag);
-
-        boolean deliveryStatus = true;
-
+        boolean deliveryStatus = false;
         try {
-            if (!handleMessage(getObjectMapper().readValue(body, getMessageClass()), deliveryDetails)) {
-                deliveryStatus = false;
+            ObjectMapper objectMapper = getObjectMapper();
+            Class messageClass = getMessageClass();
+            JsonNode rootJsonNode = objectMapper.readTree(body);
+
+            if(getConfig().isBackwardsCompatible()) {
+                if (rootJsonNode.isObject()) {
+                    List<JsonNode> children = new ArrayList<>();
+                    children.add(rootJsonNode);
+                    rootJsonNode = new ArrayNode(objectMapper.getNodeFactory(), children);
+                }
+                Boolean anyFalse = false;
+                for (JsonNode n : rootJsonNode) {
+                    M value = (M) objectMapper.treeToValue(n, messageClass);
+                    if(!handleMessage(value, deliveryDetails)) {
+                        anyFalse = true;
+                    }
+                }
+                if(!anyFalse) {
+                    deliveryStatus = true;
+                }
+            } else {
+                M value = (M) objectMapper.treeToValue(rootJsonNode, messageClass);
+                if (handleMessage(value, deliveryDetails)) {
+                    deliveryStatus = true;
+                }
             }
-        }
-        catch(NullPointerException e) {
-            log.error("Uncaught NPE: " + e.getMessage(), e);
-        }
 
+        } catch(Exception e) {
+            log.error("Exception occurred while attempting to handle message on topic {}:", envelope.getRoutingKey(), e);
+        }
         decideToAck(envelope, deliveryStatus);
-        log.debug("Message consumed");
-
     }
-
 
     public ObjectMapper getObjectMapper() {
         return getLago().getObjectMapper();
@@ -153,19 +174,17 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
             if (deliveryStatus) {
                 channel.basicAck(envelope.getDeliveryTag(), false);
             } else {
-                channel.basicNack(envelope.getDeliveryTag(), false, true);
+                channel.basicReject(envelope.getDeliveryTag(), false);
             }
         }
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public EventConsumer<M> spawn() {
+    public EventConsumer<M> spawn() throws RabbitMQSetupException {
         try {
             return (EventConsumer<M>) this.clone();
         } catch (CloneNotSupportedException e) {
-            log.error("Could not spawn new consumer: ", e);
-            return null;
+            throw new RabbitMQSetupException("Could not clone consumer", e);
         }
     }
 }

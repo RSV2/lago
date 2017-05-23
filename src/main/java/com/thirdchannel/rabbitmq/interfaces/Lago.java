@@ -2,10 +2,13 @@ package com.thirdchannel.rabbitmq.interfaces;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.*;
+import com.thirdchannel.rabbitmq.exceptions.RPCException;
+import com.thirdchannel.rabbitmq.exceptions.RabbitMQSetupException;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author Steve Pember
@@ -15,11 +18,11 @@ public interface Lago {
     void close();
 
     Connection getConnection();
-    Connection connect();
-    Connection connect(String url);
-    Connection connect(String userName, String password, String virtualHost, String host, int port);
-    Connection connect(ConnectionFactory factory);
-    Channel createChannel();
+    Connection connect() throws RabbitMQSetupException;
+    Connection connect(String url) throws RabbitMQSetupException;
+    Connection connect(String userName, String password, String virtualHost, String host, int port) throws RabbitMQSetupException;
+    Connection connect(ConnectionFactory factory) throws RabbitMQSetupException;
+    Channel createChannel() throws RabbitMQSetupException;
     Channel getChannel();
 
     ObjectMapper getObjectMapper();
@@ -27,11 +30,64 @@ public interface Lago {
 
     void setExceptionHandler(ExceptionHandler handler);
     List<EventConsumer> getRegisteredConsumers();
-    void registerConsumer(EventConsumer consumer);
+    void registerConsumer(EventConsumer consumer) throws RabbitMQSetupException;
 
     void publish(String exchangeName, String key, Object message, AMQP.BasicProperties properties);
     void publish(String exchangeName, String key, Object message, AMQP.BasicProperties properties, Channel channel);
-    Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel) throws IOException;
-    Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel) throws IOException;
-    Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel, String traceId, Integer rpcTimeout) throws IOException;
+
+    @Deprecated
+    Object rpc(
+        String exchangeName,
+        String key,
+        Object message,
+        Class clazz,
+        Channel channel
+    ) throws IOException;
+    @Deprecated
+        Object rpc(
+        String exchangeName,
+        String key,
+        Object message,
+        Class<? extends Collection> collectionClazz,
+        Class clazz,
+        Channel channel
+    ) throws IOException;
+    @Deprecated
+    Object rpc(
+        String exchangeName,
+        String key,
+        Object message,
+        Class<? extends Collection> collectionClazz,
+        Class clazz,
+        Channel channel,
+        String traceId,
+        Integer rpcTimeout
+    ) throws IOException;
+
+
+    Optional<Object> optionalRpc(
+            String exchangeName,
+            String key,
+            Object message,
+            Class clazz,
+            Channel channel
+    ) throws RPCException;
+    Optional<Object> optionalRpc(
+            String exchangeName,
+            String key,
+            Object message,
+            Class<? extends Collection> collectionClazz,
+            Class clazz,
+            Channel channel
+    ) throws RPCException;
+    Optional<Object> optionalRpc(
+            String exchangeName,
+            String key,
+            Object message,
+            Class<? extends Collection> collectionClazz,
+            Class clazz,
+            Channel channel,
+            String traceId,
+            Integer rpcTimeout
+    ) throws RPCException;
 }

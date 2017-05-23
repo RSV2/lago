@@ -12,10 +12,20 @@ public class QueueConsumerConfig {
     private int count = 1;
     private List<String> keys = new ArrayList<>();
     private String exchangeName = "";
-    private boolean durable = false;
+    private boolean durable = true;
     private boolean autoDelete = false;
-    private boolean autoAck = true;
+    private boolean autoAck = false;
     private boolean logTime = true; // if true, will log processing time for each request on this consumer
+
+    public boolean isBackwardsCompatible() {
+        return backwardsCompatible;
+    }
+
+    public void setBackwardsCompatible(boolean backwardsCompatible) {
+        this.backwardsCompatible = backwardsCompatible;
+    }
+
+    private boolean backwardsCompatible = false;
     private int prefetch = 1;
 
     private String consumer;

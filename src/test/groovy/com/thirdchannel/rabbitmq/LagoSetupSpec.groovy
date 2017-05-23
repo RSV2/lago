@@ -1,5 +1,5 @@
 package com.thirdchannel.rabbitmq
-
+import com.thirdchannel.rabbitmq.exceptions.RabbitMQSetupException
 import com.thirdchannel.rabbitmq.mock.MultiConsumer
 import com.thirdchannel.rabbitmq.mock.WidgetConsumer
 import spock.lang.Shared
@@ -59,7 +59,10 @@ class LagoSetupSpec extends Specification {
 
         then:
         !consumer.config.autoDelete
-        !consumer.config.durable
+        !consumer.config.autoAck
+        !consumer.config.backwardsCompatible
+        consumer.config.prefetch == 1
+        consumer.config.durable
         consumer.config.count == 0
         consumer.config.keys == []
     }
@@ -75,7 +78,7 @@ class LagoSetupSpec extends Specification {
         lago.getConnection() != null;
     }
 
-    void "Connecting with a bad url should return null for the connection" () {
+    void "Connecting with a bad url should throw a setupexception" () {
         given:
         lago = new Lago()
 
@@ -83,6 +86,6 @@ class LagoSetupSpec extends Specification {
         lago.connect("foo.blah")
 
         then:
-        lago.getConnection() == null
+        thrown RabbitMQSetupException
     }
 }
