@@ -18,7 +18,7 @@ public class LyraConnector {
     private static final Duration RABBITMQ_RECONNECTION_INTERVAL = Duration.seconds(1);
     private static final Duration MAX_RABBITMQ_RECONNECTION_INTERVAL = Duration.minutes(5);
 
-    private static Config config = new Config()
+    private static final Config config = new Config()
         .withRecoveryPolicy(RecoveryPolicies.recoverAlways())
         .withRetryPolicy(new RetryPolicy()
             .withMaxAttempts(MAX_RECONNECTION_ATTEMPTS)
