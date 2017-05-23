@@ -172,11 +172,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      */
     public Connection connect(ConnectionFactory factory) throws RabbitMQSetupException {
             defaultFactorySettings(factory, config);
-            try {
-                connection = factory.newConnection();
-            } catch(Exception e) {
-                throw new RabbitMQSetupException(e);
-            }
+            connection = LyraConnector.newConnection(factory);
             log.debug("Connected to Rabbit");
             channel = createChannel();
             log.debug("Declaring exchanges");
