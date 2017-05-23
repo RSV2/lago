@@ -150,13 +150,28 @@ public class MockChannel implements Channel {
     }
 
     @Override
+    public AMQP.Exchange.DeclareOk exchangeDeclare(String s, BuiltinExchangeType builtinExchangeType) throws IOException {
+        return null;
+    }
+
+    @Override
     public AMQP.Exchange.DeclareOk exchangeDeclare(String exchange, String type, boolean durable) throws IOException {
         return exchangeDeclare(exchange, type, durable, false, null);
     }
 
     @Override
+    public AMQP.Exchange.DeclareOk exchangeDeclare(String s, BuiltinExchangeType builtinExchangeType, boolean b) throws IOException {
+        return null;
+    }
+
+    @Override
     public AMQP.Exchange.DeclareOk exchangeDeclare(String exchange, String type, boolean durable, boolean autoDelete, Map<String, Object> arguments) throws IOException {
         return exchangeDeclare(exchange, type, durable, autoDelete, false,  arguments);
+    }
+
+    @Override
+    public AMQP.Exchange.DeclareOk exchangeDeclare(String s, BuiltinExchangeType builtinExchangeType, boolean b, boolean b1, Map<String, Object> map) throws IOException {
+        return null;
     }
 
     @Override
@@ -166,7 +181,17 @@ public class MockChannel implements Channel {
     }
 
     @Override
+    public AMQP.Exchange.DeclareOk exchangeDeclare(String s, BuiltinExchangeType builtinExchangeType, boolean b, boolean b1, boolean b2, Map<String, Object> map) throws IOException {
+        return null;
+    }
+
+    @Override
     public void exchangeDeclareNoWait(String exchange, String type, boolean durable, boolean autoDelete, boolean internal, Map<String, Object> arguments) throws IOException {
+
+    }
+
+    @Override
+    public void exchangeDeclareNoWait(String s, BuiltinExchangeType builtinExchangeType, boolean b, boolean b1, boolean b2, Map<String, Object> map) throws IOException {
 
     }
 
@@ -405,6 +430,16 @@ public class MockChannel implements Channel {
     @Override
     public Command rpc(Method method) throws IOException {
         return null;
+    }
+
+    @Override
+    public long messageCount(String s) throws IOException {
+        return 0;
+    }
+
+    @Override
+    public long consumerCount(String s) throws IOException {
+        return 0;
     }
 
     @Override

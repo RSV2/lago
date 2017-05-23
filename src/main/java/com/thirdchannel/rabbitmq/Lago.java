@@ -86,7 +86,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         consumer.setQueueName(consumer.getConfig().getName());
 
         try {
-            log.debug("About to make queue with name: " + consumer.getQueueName());
+            log.debug("About to make queue with name: {}", consumer.getQueueName());
             Channel channel = consumer.getChannel();
 
             QueueConsumerConfig queueConsumerConfig = consumer.getConfig();
@@ -146,7 +146,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         ConnectionFactory factory = new ConnectionFactory();
         try {
             factory.setUri(url);
-        } catch (NoSuchAlgorithmException | KeyManagementException | URISyntaxException e) {
+        } catch (NoSuchAlgorithmException | KeyManagementException | URISyntaxException | NullPointerException e) {
             throw new RabbitMQSetupException("Could not set URI on connection factory", e);
         }
         return connect(factory);
@@ -218,15 +218,19 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     }
 
     public void close() {
-        try {
-            channel.close();
-        } catch (IOException | TimeoutException e) {
-            log.error("Could not close channel {}", channel, e);
+        if(channel != null) {
+            try {
+                channel.close();
+            } catch (IOException | TimeoutException e) {
+                log.error("Could not close channel {}", channel, e);
+            }
         }
-        try {
-            connection.close();
-        } catch (IOException e) {
-            log.error("Could not close connection {}", connection, e);
+        if(connection != null){
+            try {
+                connection.close();
+            } catch (IOException e) {
+                log.error("Could not close connection {}", connection, e);
+            }
         }
     }
 
