@@ -18,19 +18,17 @@ public class LyraConnector {
     private static final Duration RABBITMQ_RECONNECTION_INTERVAL = Duration.seconds(1);
     private static final Duration MAX_RABBITMQ_RECONNECTION_INTERVAL = Duration.minutes(5);
 
-    private static Config config() {
-        return new Config()
-            .withRecoveryPolicy(RecoveryPolicies.recoverAlways())
-            .withRetryPolicy(new RetryPolicy()
-                .withMaxAttempts(MAX_RECONNECTION_ATTEMPTS)
-                .withInterval(RABBITMQ_RECONNECTION_INTERVAL)
-                .withMaxDuration(MAX_RABBITMQ_RECONNECTION_INTERVAL)
-            );
-    }
+    private static Config config = new Config()
+        .withRecoveryPolicy(RecoveryPolicies.recoverAlways())
+        .withRetryPolicy(new RetryPolicy()
+            .withMaxAttempts(MAX_RECONNECTION_ATTEMPTS)
+            .withInterval(RABBITMQ_RECONNECTION_INTERVAL)
+            .withMaxDuration(MAX_RABBITMQ_RECONNECTION_INTERVAL)
+        );
 
     public static ConfigurableConnection newConnection(ConnectionFactory factory) throws RabbitMQSetupException {
         try {
-            return Connections.create(factory, config());
+            return Connections.create(factory, config);
         } catch (IOException | TimeoutException e) {
             throw new RabbitMQSetupException("Could not create connection", e);
         }

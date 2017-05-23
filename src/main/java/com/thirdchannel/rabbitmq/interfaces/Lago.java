@@ -2,6 +2,7 @@ package com.thirdchannel.rabbitmq.interfaces;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.*;
+import com.thirdchannel.rabbitmq.exceptions.RPCException;
 import com.thirdchannel.rabbitmq.exceptions.RabbitMQSetupException;
 
 import java.io.IOException;
@@ -70,7 +71,7 @@ public interface Lago {
             Object message,
             Class clazz,
             Channel channel
-    );
+    ) throws RPCException;
     Optional<Object> optionalRpc(
             String exchangeName,
             String key,
@@ -78,7 +79,7 @@ public interface Lago {
             Class<? extends Collection> collectionClazz,
             Class clazz,
             Channel channel
-    );
+    ) throws RPCException;
     Optional<Object> optionalRpc(
             String exchangeName,
             String key,
@@ -88,5 +89,5 @@ public interface Lago {
             Channel channel,
             String traceId,
             Integer rpcTimeout
-    );
+    ) throws RPCException;
 }

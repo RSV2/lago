@@ -10,6 +10,7 @@ import com.thirdchannel.rabbitmq.config.QueueConsumerConfig;
 import com.thirdchannel.rabbitmq.config.RabbitMQConfig;
 import com.thirdchannel.rabbitmq.exceptions.LagoConfigLoadException;
 import com.thirdchannel.rabbitmq.exceptions.LagoDefaultExceptionHandler;
+import com.thirdchannel.rabbitmq.exceptions.RPCException;
 import com.thirdchannel.rabbitmq.exceptions.RabbitMQSetupException;
 import com.thirdchannel.rabbitmq.interfaces.EventConsumer;
 import org.slf4j.Logger;
@@ -180,7 +181,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
                 try {
                     channel.exchangeDeclare(exchangeConfig.getName(), exchangeConfig.getType(), exchangeConfig.isDurable(), exchangeConfig.isAutoDelete(), null);
                 } catch(IOException e) {
-                    log.error("Could not declare exchange {}", exchangeConfig.getName(),  e);
+                    throw new RabbitMQSetupException("Could not declare exchange " + exchangeConfig.getName(),  e);
                 }
             }
             // todo: declare internal api rpc consumer
@@ -399,29 +400,29 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     }
 
     @Override
-    public Optional<Object> optionalRpc(String exchangeName, String key, Object message, Class clazz, Channel channel) {
+    public Optional<Object> optionalRpc(String exchangeName, String key, Object message, Class clazz, Channel channel) throws RPCException {
         try {
             return Optional.ofNullable(rpc(exchangeName, key, message, clazz, channel));
         } catch (IOException e) {
-            return Optional.empty();
+            throw new RPCException(exchangeName, key, e);
         }
     }
 
     @Override
-    public Optional<Object> optionalRpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel) {
+    public Optional<Object> optionalRpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel) throws RPCException {
         try {
             return Optional.ofNullable(rpc(exchangeName, key, message, collectionClazz, clazz, channel));
         } catch (IOException e) {
-            return Optional.empty();
+            throw new RPCException(exchangeName, key, e);
         }
     }
 
     @Override
-    public Optional<Object> optionalRpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel, String traceId, Integer rpcTimeout) {
+    public Optional<Object> optionalRpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel, String traceId, Integer rpcTimeout) throws RPCException {
         try {
             return Optional.ofNullable(rpc(exchangeName, key, message, collectionClazz, clazz, channel, traceId, rpcTimeout));
         } catch (IOException e) {
-            return Optional.empty();
+            throw new RPCException(exchangeName, key, e);
         }
     }
 
