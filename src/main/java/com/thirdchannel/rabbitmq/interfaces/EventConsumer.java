@@ -4,6 +4,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
 import com.thirdchannel.rabbitmq.RabbitMQDeliveryDetails;
 import com.thirdchannel.rabbitmq.config.QueueConsumerConfig;
+import com.thirdchannel.rabbitmq.exceptions.RabbitMQSetupException;
 
 /**
  * @author Steve Pember
@@ -31,6 +32,6 @@ public interface EventConsumer<M> extends Consumer {
      * Like 'copy', but meant to be used to handle things like dependency injection;
      * @return EventConsumer a duplicate of the original
      */
-    EventConsumer<M> spawn();
+    EventConsumer<M> spawn() throws RabbitMQSetupException;
 
 }

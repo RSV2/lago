@@ -1,15 +1,14 @@
 package com.thirdchannel.rabbitmq;
 
 import com.thirdchannel.rabbitmq.config.RabbitMQConfig;
+import com.thirdchannel.rabbitmq.exceptions.LagoConfigLoadException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
-import org.yaml.snakeyaml.error.YAMLException;
 
-import java.io.*;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * @author Steve Pember
@@ -17,22 +16,21 @@ import java.net.URL;
 class PropertiesManager {
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
-    public RabbitMQConfig load() throws FileNotFoundException {
+    public RabbitMQConfig load() throws LagoConfigLoadException {
         //InputStream input = PropertiesManager.class.getClassLoader().getResourceAsStream("lago.yaml");
         InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("lago.yaml");
         if (input == null) {
-            throw new FileNotFoundException("Could not find lago.yaml on the classpath");
+            throw new LagoConfigLoadException("Could not find lago.yaml on the classpath");
         }
 
+        Yaml yaml = new Yaml(new Constructor(RabbitMQConfig.class));
+        RabbitMQConfig data = (RabbitMQConfig) yaml.load(input);
+        log.info("RabbitMQ configuration loaded");
         try {
-            Yaml yaml = new Yaml(new Constructor(RabbitMQConfig.class));
-            RabbitMQConfig data = (RabbitMQConfig)yaml.load(input);
-            log.info("RabbitMQ configuration loaded");
             input.close();
-            return data;
-        } catch(YAMLException | IOException ye) {
-            log.error("Could not load configuration: ", ye);
-            return null;
+        } catch (IOException e) {
+            throw new LagoConfigLoadException("Could not close input stream for lago.yaml");
         }
+        return data;
     }
 }

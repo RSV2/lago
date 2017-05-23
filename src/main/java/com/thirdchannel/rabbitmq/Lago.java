@@ -8,12 +8,13 @@ import com.rabbitmq.client.*;
 import com.thirdchannel.rabbitmq.config.ExchangeConfig;
 import com.thirdchannel.rabbitmq.config.QueueConsumerConfig;
 import com.thirdchannel.rabbitmq.config.RabbitMQConfig;
+import com.thirdchannel.rabbitmq.exceptions.LagoConfigLoadException;
 import com.thirdchannel.rabbitmq.exceptions.LagoDefaultExceptionHandler;
+import com.thirdchannel.rabbitmq.exceptions.RabbitMQSetupException;
 import com.thirdchannel.rabbitmq.interfaces.EventConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
@@ -35,7 +36,6 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     private Connection connection;
     private Channel channel; // create a local channel just for Lago
 
-    private ConnectionFactory connectionFactory;
     private ExceptionHandler exceptionHandler = new LagoDefaultExceptionHandler();
 
     private final List<EventConsumer> registeredConsumers = new ArrayList<EventConsumer>();
@@ -43,7 +43,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     private RabbitMQConfig config;
     private PropertiesManager propertiesManager = new PropertiesManager();
 
-    public Lago() {
+    public Lago() throws LagoConfigLoadException {
         loadConfig();
     }
 
@@ -55,20 +55,15 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         OBJECT_MAPPER = mapper;
     }
     
-    protected void loadConfig() {
-
-        try {
-            config = propertiesManager.load();
-        } catch (FileNotFoundException e) {
-            log.error("No config file 'lago.yaml' found on the classpath");
-        }
+    protected void loadConfig() throws LagoConfigLoadException {
+        config = propertiesManager.load();
     }
 
     public RabbitMQConfig getConfig() {
         return config;
     }
 
-    public void registerConsumer(EventConsumer consumer) {
+    public void registerConsumer(EventConsumer consumer) throws RabbitMQSetupException {
         if (consumer.isConfigured()) {
             log.info(consumer.getClass().getSimpleName() +" appears to be already configured");
         } else {
@@ -86,7 +81,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         }
     }
 
-    private void bindConsumer(EventConsumer consumer, int count) {
+    private void bindConsumer(EventConsumer consumer, int count) throws RabbitMQSetupException {
         consumer.setChannel(createChannel());
         consumer.setQueueName(consumer.getConfig().getName());
 
@@ -123,7 +118,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 
             registeredConsumers.add(consumer);
         } catch (IOException e) {
-            log.error("Could not declare queue and bind to consumer: " + e.getMessage(), e);
+            log.error("Could not declare queue and bind to consumer:", e);
         }
     }
 
@@ -132,7 +127,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     }
 
 
-    public Connection connect () {
+    public Connection connect() throws RabbitMQSetupException {
         // if environment variable present, use that
         // otherwise, use config. if no config, then throw exception
         String connectionUrl = config.getConnectionEnvironmentUrl();
@@ -141,24 +136,23 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         } else if (config.hasConnectionConfig()) {
             connect(config.getUsername(), config.getPassword(), config.getVirtualHost(), config.getHost(), config.getPort());
         } else {
-            throw new RuntimeException("Could not located rabbit mq configuration in environment or config");
+            throw new RabbitMQSetupException("Could not located rabbit mq configuration in environment or config");
         }
         return getConnection();
 
     }
 
-    public Connection connect(String url) {
+    public Connection connect(String url) throws RabbitMQSetupException {
         ConnectionFactory factory = new ConnectionFactory();
         try {
             factory.setUri(url);
-            return connect(factory);
-        } catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException | NullPointerException e) {
-            log.error("Could not connect to Rabbit over url " + url + ": ", e);
-            return null;
+        } catch (NoSuchAlgorithmException | KeyManagementException | URISyntaxException e) {
+            throw new RabbitMQSetupException("Could not set URI on connection factory", e);
         }
+        return connect(factory);
     }
 
-    public Connection connect(String userName, String password, String virtualHost, String host, int port) {
+    public Connection connect(String userName, String password, String virtualHost, String host, int port) throws RabbitMQSetupException{
         ConnectionFactory factory = new ConnectionFactory();
         factory.setUsername(userName);
         factory.setPassword(password);
@@ -170,27 +164,30 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     }
 
     /**
-     * Connects usinsee ConnectionFacory}, allowing for custom configuration by the service.
+     * Connects using ConnectionFactory, allowing for custom configuration by the service.
      * Warning: no configuration will be provided. Make sure that you've set values like automatic recovery
      *
      * @param factory the factory
      * @return a connection
      */
-    public Connection connect(ConnectionFactory factory) {
-        try {
+    public Connection connect(ConnectionFactory factory) throws RabbitMQSetupException {
             defaultFactorySettings(factory, config);
-            connectionFactory = factory;
-            connection = factory.newConnection();
-            log.info("Connected to Rabbit");
+            try {
+                connection = factory.newConnection();
+            } catch(Exception e) {
+                throw new RabbitMQSetupException(e);
+            }
+            log.debug("Connected to Rabbit");
             channel = createChannel();
             log.debug("Declaring exchanges");
             for (ExchangeConfig exchangeConfig : config.getExchanges()) {
-                channel.exchangeDeclare(exchangeConfig.getName(), exchangeConfig.getType(), exchangeConfig.isDurable(), exchangeConfig.isAutoDelete(), null);
+                try {
+                    channel.exchangeDeclare(exchangeConfig.getName(), exchangeConfig.getType(), exchangeConfig.isDurable(), exchangeConfig.isAutoDelete(), null);
+                } catch(IOException e) {
+                    log.error("Could not declare exchange {}", exchangeConfig.getName(),  e);
+                }
             }
             // todo: declare internal api rpc consumer
-        } catch(IOException | TimeoutException e) {
-            log.error(e.getMessage(), e);
-        }
         return connection;
     }
 
@@ -208,12 +205,11 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     }
 
 
-    public Channel createChannel() {
+    public Channel createChannel() throws RabbitMQSetupException {
         try {
             return connection.createChannel();
         } catch (IOException e) {
-            log.error("Could not create channel: ", e);
-            return null;
+            throw new RabbitMQSetupException("Could not create channel", e);
         }
     }
 
@@ -228,14 +224,17 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     public void close() {
         try {
             channel.close();
+        } catch (IOException | TimeoutException e) {
+            log.error("Could not close channel {}", channel, e);
+        }
+        try {
             connection.close();
-        } catch (IOException | TimeoutException | NullPointerException e) {
-            log.error("Could not close connection: ", e);
+        } catch (IOException e) {
+            log.error("Could not close connection {}", connection, e);
         }
     }
 
 
-    @Override
     public Connection getConnection() {
         return connection;
     }
@@ -273,6 +272,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @return Object Will be an instance of clazz
      * @throws IOException If unable to connect or bind the queuetion
      */
+    @Deprecated
     public Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel) throws IOException {
         return rpc(exchangeName, key, message, collectionClazz, clazz, channel, UUID.randomUUID().toString(), null);
     }
@@ -289,6 +289,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @return Object Will be an instance of clazz
      * @throws IOException If unable to connect or bind the queuetion
      */
+    @Deprecated
     public Object rpc(String exchangeName, String key, Object message, Class clazz, Channel channel) throws IOException {
         return rpc(exchangeName, key, message, null, clazz, channel, UUID.randomUUID().toString(), null);
     }
@@ -305,6 +306,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @return Object Will be an instance of clazz
      * @throws IOException If unable to connect or bind the queuetion
      */
+    @Deprecated
     public Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel, Integer rpcTimeout) throws IOException {
         return rpc(exchangeName, key, message, collectionClazz, clazz, channel, UUID.randomUUID().toString(), rpcTimeout);
     }
@@ -321,6 +323,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      * @return Object Will be an instance of clazz
      * @throws IOException If unable to connect or bind the queuetion
      */
+    @Deprecated
     public Object rpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel, String traceId, Integer rpcTimeout) throws IOException {
         // to do an RPC (synchronous, in this case) in RabbitMQ, we must do the following:
         // 1. create a unique response queue for the rpc call
@@ -393,6 +396,33 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         }
         log.debug("Received: {}", new String(delivery.getBody()));
         return objectReader.readValue(delivery.getBody());
+    }
+
+    @Override
+    public Optional<Object> optionalRpc(String exchangeName, String key, Object message, Class clazz, Channel channel) {
+        try {
+            return Optional.ofNullable(rpc(exchangeName, key, message, clazz, channel));
+        } catch (IOException e) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<Object> optionalRpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel) {
+        try {
+            return Optional.ofNullable(rpc(exchangeName, key, message, collectionClazz, clazz, channel));
+        } catch (IOException e) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<Object> optionalRpc(String exchangeName, String key, Object message, Class<? extends Collection> collectionClazz, Class clazz, Channel channel, String traceId, Integer rpcTimeout) {
+        try {
+            return Optional.ofNullable(rpc(exchangeName, key, message, collectionClazz, clazz, channel, traceId, rpcTimeout));
+        } catch (IOException e) {
+            return Optional.empty();
+        }
     }
 
     private int chooseTimeout(Integer timeoutOverride) {

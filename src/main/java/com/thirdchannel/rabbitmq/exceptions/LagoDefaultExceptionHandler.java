@@ -13,6 +13,6 @@ public class LagoDefaultExceptionHandler extends DefaultExceptionHandler {
 
     @Override
     protected void handleChannelKiller(Channel channel, Throwable exception, String what) {
-        log.error("Consumer Exception observed due to " + what, exception);
+        log.error("Consumer Exception observed due to {}:", what, exception);
     }
 }
