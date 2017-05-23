@@ -32,7 +32,6 @@ class LagoSpec extends Specification {
     }
 
 
-    @Ignore
     def "Basic publish check" () {
         given:
         MockChannel channel = new MockChannel()
@@ -47,7 +46,6 @@ class LagoSpec extends Specification {
         data[0] == '{"count":0,"active":true,"name":"test"}'
     }
 
-    @Ignore
     def "publishing an object should serialize it to JSON"() {
         given:
         MockChannel channel = new MockChannel()
@@ -63,6 +61,7 @@ class LagoSpec extends Specification {
         [["foo":1], ["foo":2]]              |   '[{"foo":1},{"foo":2}]'
     }
 
+    @Ignore
     def "Live publish test" () {
 
         given:
@@ -88,7 +87,6 @@ class LagoSpec extends Specification {
 
     }
 
-    @Ignore
     def "Rpc calls should send and receive JSON" () {
 
         given:
@@ -108,7 +106,6 @@ class LagoSpec extends Specification {
         widget.name == "RPC Test Widget"
     }
 
-    @Ignore
     def "Rpc calls should send and receive JSON collections" () {
 
         given:
@@ -129,7 +126,6 @@ class LagoSpec extends Specification {
         widgets[1].count == 5
     }
 
-    @Ignore
     void "RPCs can have custom timeouts"(){
         given:
         lago.registerConsumer(new TimeoutRPCConsumer())
