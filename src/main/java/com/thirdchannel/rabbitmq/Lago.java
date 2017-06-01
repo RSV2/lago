@@ -1,5 +1,6 @@
 package com.thirdchannel.rabbitmq;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -32,7 +33,8 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
     public static ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .registerModule(new AfterburnerModule());
+            .registerModule(new AfterburnerModule())
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private Connection connection;
     private Channel channel; // create a local channel just for Lago
