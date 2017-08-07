@@ -1,6 +1,6 @@
 package com.thirdchannel.rabbitmq;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
+import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -29,24 +29,34 @@ import org.slf4j.LoggerFactory;
  * @author Steve Pember
  */
 public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
-    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     public static ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .registerModule(new AfterburnerModule())
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        .registerModule(new AfterburnerModule())
+        .configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
 
+    private static final int NETWORK_RECOVERY_INTERVAL = 1000;
+
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
+
+    private final ConnectionFactory connectionFactory;
     private Connection connection;
-    private Channel channel; // create a local channel just for Lago
+    private Channel channel;
 
     private ExceptionHandler exceptionHandler = new LagoDefaultExceptionHandler();
 
     private final List<EventConsumer> registeredConsumers = new ArrayList<>();
 
-    private RabbitMQConfig config;
+    private final RabbitMQConfig config;
     private final PropertiesManager propertiesManager = new PropertiesManager();
 
     public Lago() throws LagoConfigLoadException {
         config = propertiesManager.load();
+
+        connectionFactory = new ConnectionFactory();
+        connectionFactory.setAutomaticRecoveryEnabled(true);
+        connectionFactory.setNetworkRecoveryInterval(NETWORK_RECOVERY_INTERVAL);
+        connectionFactory.setTopologyRecoveryEnabled(true);
+        connectionFactory.setExceptionHandler(exceptionHandler);
     }
 
     @Override
@@ -163,71 +173,83 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 
     }
 
+
     @Override
     public Connection connect(String url) throws RabbitMQSetupException {
-        ConnectionFactory factory = new ConnectionFactory();
+
         try {
-            factory.setUri(url);
-        } catch (NoSuchAlgorithmException
+            connectionFactory.setUri(url);
+
+            return connect(connectionFactory);
+        }
+        catch (NoSuchAlgorithmException
             | KeyManagementException
             | URISyntaxException
             | NullPointerException e) {
             throw new RabbitMQSetupException("Could not set URI on connection factory", e);
         }
-        return connect(factory);
+
     }
 
     @Override
     public Connection connect(String userName, String password, String virtualHost, String host, int port)
         throws RabbitMQSetupException {
 
-        ConnectionFactory factory = new ConnectionFactory();
-        factory.setUsername(userName);
-        factory.setPassword(password);
-        factory.setVirtualHost(virtualHost);
-        factory.setHost(host);
-        factory.setPort(port);
-        factory.setConnectionTimeout(config.getConnectionTimeout());
-        return connect(factory);
+        connectionFactory.setUsername(userName);
+        connectionFactory.setPassword(password);
+        connectionFactory.setVirtualHost(virtualHost);
+        connectionFactory.setHost(host);
+        connectionFactory.setPort(port);
+
+        return connect(connectionFactory);
     }
 
     /**
      * Connects using ConnectionFactory, allowing for custom configuration by the service.
      * Warning: no configuration will be provided. Make sure that you've set values like automatic recovery
      *
-     * @param factory the factory
+     * @param connectionFactory Lyra connection options
      * @return a connection
      * @throws RabbitMQSetupException if the connection cannot be created
      */
     @Override
-    public Connection connect(ConnectionFactory factory) throws RabbitMQSetupException {
+    public Connection connect(ConnectionFactory connectionFactory) throws RabbitMQSetupException {
+        try {
             if (connection != null) {
                 throw new RabbitMQSetupException("Connection already opened");
             }
-            connection = LyraConnector.newConnection(factory);
+            connection = connectionFactory.newConnection();
+
             log.debug("Connected to Rabbit");
+
             if (channel != null) {
                 throw new RabbitMQSetupException("Channel already opened");
             }
             channel = createChannel();
+
             log.debug("Declaring exchanges");
             for (ExchangeConfig exchangeConfig : config.getExchanges()) {
-                try {
-                    channel.exchangeDeclare(exchangeConfig.getName(), exchangeConfig.getType(), exchangeConfig.isDurable(), exchangeConfig.isAutoDelete(), null);
-                }
-                catch(IOException e) {
-                    throw new RabbitMQSetupException("Could not declare exchange " + exchangeConfig.getName(),  e);
-                }
+                channel.exchangeDeclare(
+                    exchangeConfig.getName(),
+                    exchangeConfig.getType(),
+                    exchangeConfig.isDurable(),
+                    exchangeConfig.isAutoDelete(),
+                    null
+                );
             }
-            // todo: declare internal api rpc consumer
-        return connection;
+            return connection;
+        }
+        catch(IOException | TimeoutException e) {
+            throw new RabbitMQSetupException("Error setting up RabbitMQ", e);
+        }
     }
 
     @Override
     public Channel createChannel() throws RabbitMQSetupException {
         try {
             return connection.createChannel();
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new RabbitMQSetupException("Could not create channel", e);
         }
     }
