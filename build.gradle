@@ -43,7 +43,7 @@ repositories {
 // for local work
 //
 //group = 'com.thirdchannel'
-//version = '0.2.2'
+version = '0.2.3'
 //
 //ext.isSnapshot = version.contains('SNAPSHOT')
 //

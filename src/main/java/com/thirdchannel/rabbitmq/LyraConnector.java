@@ -1,10 +1,13 @@
 package com.thirdchannel.rabbitmq;
 
+import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.thirdchannel.rabbitmq.exceptions.RabbitMQSetupException;
-import net.jodah.lyra.Connections;
-import net.jodah.lyra.config.*;
 import net.jodah.lyra.util.Duration;
+import net.jodah.lyra.Connections;
+import net.jodah.lyra.config.Config;
+import net.jodah.lyra.config.RecoveryPolicy;
+import net.jodah.lyra.config.RetryPolicy;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
@@ -23,10 +26,11 @@ public class LyraConnector {
             .withBackoff(RABBITMQ_RETRY_INTERVAL, RABBITMQ_MAX_RETRY_INTERVAL)
         );
 
-    public static ConfigurableConnection newConnection(ConnectionFactory factory) throws RabbitMQSetupException {
+    public static Connection newConnection(ConnectionFactory factory) throws RabbitMQSetupException {
         try {
             return Connections.create(factory, config);
-        } catch (IOException | TimeoutException e) {
+        }
+        catch (IOException | TimeoutException e) {
             throw new RabbitMQSetupException("Could not create connection", e);
         }
     }
