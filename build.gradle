@@ -43,7 +43,7 @@ repositories {
 // for local work
 //
 //group = 'com.thirdchannel'
-//version = '0.2.2'
+version = '0.2.4'
 //
 //ext.isSnapshot = version.contains('SNAPSHOT')
 //
@@ -80,7 +80,6 @@ dependencies {
     compile 'com.fasterxml.jackson.module:jackson-module-afterburner:2.7.1'
 
     compile "com.rabbitmq:amqp-client:4.1.0"
-    compile 'net.jodah:lyra:0.5.4'
 
     testCompile "org.codehaus.groovy:groovy-all:2.4.5"
     testCompile "org.spockframework:spock-core:1.0-groovy-2.4"
