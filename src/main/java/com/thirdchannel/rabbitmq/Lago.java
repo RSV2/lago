@@ -242,9 +242,9 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         catch(IOException | TimeoutException e) {
             try {
                 try {
-                    connection.close();
-                } finally {
                     channel.close();
+                } finally {
+                    connection.close();
                 }
             } finally {
                 throw new RabbitMQSetupException("Error setting up RabbitMQ", e);
