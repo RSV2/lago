@@ -225,7 +225,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
             if (channel != null) {
                 throw new RabbitMQSetupException("Channel already opened");
             }
-            channel = createChannel();
+            channel = connection.createChannel();
 
             log.debug("Declaring exchanges");
             for (ExchangeConfig exchangeConfig : config.getExchanges()) {
@@ -240,7 +240,15 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
             return connection;
         }
         catch(IOException | TimeoutException e) {
-            throw new RabbitMQSetupException("Error setting up RabbitMQ", e);
+            try {
+                try {
+                    channel.close();
+                } finally {
+                    connection.close();
+                }
+            } finally {
+                throw new RabbitMQSetupException("Error setting up RabbitMQ", e);
+            }
         }
     }
 
@@ -400,7 +408,9 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         //      documentation about how to programatically do an rpc call (e.g. what we do here).
         // * The official java rabbitmq documentation also says to do what we do here.
         RpcStopWatch stopWatch = null;
-        if (config.isLogRpcTime()) {stopWatch = new RpcStopWatch().start();}
+        if (config.isLogRpcTime()) {
+            stopWatch = new RpcStopWatch().start();
+        }
 
         JavaType javaType;
         if (collectionClazz != null) {
@@ -411,51 +421,55 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
         ObjectReader objectReader = OBJECT_MAPPER.readerFor(javaType);
         String replyQueueName = channel.queueDeclare("", false, false, true, null).getQueue();
         log.info("Listening for rpc response on " + replyQueueName);
-
-        QueueingConsumer consumer = new QueueingConsumer(channel);
-
-        channel.queueBind(replyQueueName, exchangeName, replyQueueName);
-        channel.basicConsume(replyQueueName, true, consumer);
-
-        RabbitMQDeliveryDetails rpcDetails = buildRpcRabbitMQDeliveryDetails(exchangeName, key, replyQueueName, traceId, rpcTimeout);
-        log.debug("Expiration for RPC: " + rpcDetails.getBasicProperties().getExpiration());
-
-        // then publish the query
-        publish(exchangeName, key, message, rpcDetails.getBasicProperties(), channel);
-        log.debug("Waiting for rpc response delivery on " + key);
-
-        QueueingConsumer.Delivery delivery = null;
         try {
-            delivery = consumer.nextDelivery(chooseTimeout(rpcTimeout));
-        }
-        catch (InterruptedException e) {
-            log.error("Thread interrupted while waiting for rpc response:", e);
-        }
+            QueueingConsumer consumer = new QueueingConsumer(channel);
 
-        if (delivery != null) {
-            log.trace("RPC response received.");
-            if (delivery.getProperties().getCorrelationId().equals(
-                rpcDetails.getBasicProperties().getCorrelationId())) {
+            channel.queueBind(replyQueueName, exchangeName, replyQueueName);
+            channel.basicConsume(replyQueueName, true, consumer);
 
-                log.trace("Correlation ids are equal.");
-                channel.basicCancel(consumer.getConsumerTag());
+            RabbitMQDeliveryDetails rpcDetails = buildRpcRabbitMQDeliveryDetails(exchangeName, key, replyQueueName, traceId, rpcTimeout);
+            log.debug("Expiration for RPC: " + rpcDetails.getBasicProperties().getExpiration());
+
+            // then publish the query
+            publish(exchangeName, key, message, rpcDetails.getBasicProperties(), channel);
+            log.debug("Waiting for rpc response delivery on " + key);
+
+            QueueingConsumer.Delivery delivery = null;
+            try {
+                delivery = consumer.nextDelivery(chooseTimeout(rpcTimeout));
+            } catch (InterruptedException e) {
+                log.error("Thread interrupted while waiting for rpc response:", e);
             }
-            else {
-                log.warn("Correlation ids not equal! key: " + key);
+
+            if (delivery != null) {
+                log.trace("RPC response received.");
+                if (delivery.getProperties().getCorrelationId().equals(
+                        rpcDetails.getBasicProperties().getCorrelationId())) {
+
+                    log.trace("Correlation ids are equal.");
+                    channel.basicCancel(consumer.getConsumerTag());
+                } else {
+                    log.warn("Correlation ids not equal! key: " + key);
+                    return null;
+                }
+            } else {
+                log.warn("Timeout occurred on RPC message to key: " + key);
                 return null;
             }
-        } else {
-            log.warn("Timeout occurred on RPC message to key: " + key);
-            return null;
+            // we must clean up!
+
+            if (config.isLogRpcTime() && stopWatch != null) {
+                stopWatch.stopAndPublish(rpcDetails);
+            }
+            log.debug("Received: {}", new String(delivery.getBody()));
+            return objectReader.readValue(delivery.getBody());
+        } finally {
+            try {
+                channel.queueUnbind(replyQueueName, exchangeName, replyQueueName);
+            } finally {
+                channel.queueDelete(replyQueueName);
+            }
         }
-        // we must clean up!
-        channel.queueUnbind(replyQueueName, exchangeName, replyQueueName);
-        channel.queueDelete(replyQueueName);
-        if (config.isLogRpcTime() && stopWatch != null) {
-            stopWatch.stopAndPublish(rpcDetails);
-        }
-        log.debug("Received: {}", new String(delivery.getBody()));
-        return objectReader.readValue(delivery.getBody());
     }
 
     @Override
