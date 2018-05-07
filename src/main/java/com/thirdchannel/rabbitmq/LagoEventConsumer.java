@@ -126,9 +126,7 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
 
     @Override
     public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
-        if(log.isInfoEnabled()) {
-            log.info("Handling message with topic {} on consumerTag {} and data: {}", envelope.getRoutingKey(), consumerTag, new String(body));
-        }
+        log.info("Handling message with topic {} on consumerTag {} and data: {}", envelope.getRoutingKey(), consumerTag, new String(body));
         RabbitMQDeliveryDetails deliveryDetails = new RabbitMQDeliveryDetails(envelope, properties, consumerTag);
         boolean deliveryStatus = false;
         try {
