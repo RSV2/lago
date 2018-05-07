@@ -72,7 +72,7 @@ dependencies {
 }
 
 group = 'com.thirdchannel'
-version = '0.2.6-SNAPSHOT'
+version = '0.2.6'
 
 ext.isSnapshot = version.contains('SNAPSHOT')
 
