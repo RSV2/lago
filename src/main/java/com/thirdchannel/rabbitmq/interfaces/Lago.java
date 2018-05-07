@@ -2,7 +2,7 @@ package com.thirdchannel.rabbitmq.interfaces;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.*;
-import com.thirdchannel.rabbitmq.exceptions.RPCException;
+import com.thirdchannel.rabbitmq.exceptions.RPCTimeoutException;
 import com.thirdchannel.rabbitmq.exceptions.RabbitMQSetupException;
 
 import java.io.IOException;
@@ -32,8 +32,8 @@ public interface Lago {
     List<EventConsumer> getRegisteredConsumers();
     void registerConsumer(EventConsumer consumer) throws RabbitMQSetupException;
 
-    void publish(String exchangeName, String key, Object message, AMQP.BasicProperties properties);
-    void publish(String exchangeName, String key, Object message, AMQP.BasicProperties properties, Channel channel);
+    void publish(String exchangeName, String key, Object message, AMQP.BasicProperties properties) throws IOException;
+    void publish(String exchangeName, String key, Object message, AMQP.BasicProperties properties, Channel channel) throws IOException;
 
     @Deprecated
     Object rpc(
@@ -42,7 +42,7 @@ public interface Lago {
         Object message,
         Class clazz,
         Channel channel
-    ) throws IOException;
+    ) throws IOException, RPCTimeoutException;
     @Deprecated
         Object rpc(
         String exchangeName,
@@ -51,7 +51,7 @@ public interface Lago {
         Class<? extends Collection> collectionClazz,
         Class clazz,
         Channel channel
-    ) throws IOException;
+    ) throws IOException, RPCTimeoutException;
     @Deprecated
     Object rpc(
         String exchangeName,
@@ -62,7 +62,7 @@ public interface Lago {
         Channel channel,
         String traceId,
         Integer rpcTimeout
-    ) throws IOException;
+    ) throws IOException, RPCTimeoutException;
 
 
     Optional<Object> optionalRpc(
@@ -71,7 +71,7 @@ public interface Lago {
             Object message,
             Class clazz,
             Channel channel
-    ) throws RPCException;
+    ) throws IOException, RPCTimeoutException;
     Optional<Object> optionalRpc(
             String exchangeName,
             String key,
@@ -79,7 +79,7 @@ public interface Lago {
             Class<? extends Collection> collectionClazz,
             Class clazz,
             Channel channel
-    ) throws RPCException;
+    ) throws IOException, RPCTimeoutException;
     Optional<Object> optionalRpc(
             String exchangeName,
             String key,
@@ -89,5 +89,5 @@ public interface Lago {
             Channel channel,
             String traceId,
             Integer rpcTimeout
-    ) throws RPCException;
+    ) throws IOException, RPCTimeoutException;
 }

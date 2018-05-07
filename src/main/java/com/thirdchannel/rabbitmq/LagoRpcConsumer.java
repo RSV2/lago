@@ -3,6 +3,7 @@ package com.thirdchannel.rabbitmq;
 import com.rabbitmq.client.AMQP;
 import com.thirdchannel.rabbitmq.interfaces.RpcConsumer;
 
+import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +15,7 @@ public abstract class LagoRpcConsumer<M, R> extends LagoEventConsumer<M> impleme
     private Class<R> responseClass;
 
     @Override
-    public boolean handleMessage(M data, RabbitMQDeliveryDetails rabbitMQDeliveryDetails) {
+    public boolean handleMessage(M data, RabbitMQDeliveryDetails rabbitMQDeliveryDetails) throws IOException {
         log.info("Receiving RPC request on topic {}", rabbitMQDeliveryDetails.getEnvelope().getRoutingKey());
         RpcStopWatch stopWatch = null;
         if (getConfig().isLogTime()) {stopWatch = new RpcStopWatch("RPC handling").start();}
