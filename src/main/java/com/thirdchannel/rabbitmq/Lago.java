@@ -228,40 +228,45 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
      */
     @Override
     public Connection connect(ConnectionFactory connectionFactory) throws RabbitMQSetupException {
-        log.debug("Connecting to RabbitMQ with connection factory: {}", connectionFactory);
-
-        if (connection != null) {
-            throw new RabbitMQSetupException("Connection already opened");
-        }
-
         try {
-            connection = connectionFactory.newConnection();
-        } catch (final IOException | TimeoutException e) {
-            throw new RabbitMQSetupException("Could not open connection to RabbitMQ", e);
-        }
-        log.debug("Connected to Rabbit");
+            log.debug("Connecting to RabbitMQ with connection factory: {}", connectionFactory);
 
-        if (channel != null) {
-            throw new RabbitMQSetupException("Channel already opened");
-        }
-        channel = createChannel();
-        log.debug("Created channel");
-
-        for (ExchangeConfig exchangeConfig : config.getExchanges()) {
-            log.debug("Declaring exchange: {}", exchangeConfig.getName());
-            try {
-                channel.exchangeDeclare(
-                    exchangeConfig.getName(),
-                    exchangeConfig.getType(),
-                    exchangeConfig.isDurable(),
-                    exchangeConfig.isAutoDelete(),
-                    null
-                );
-            } catch (final IOException e) {
-                throw new RabbitMQSetupException("Could not declare exchange " + exchangeConfig.getName(), e);
+            if (connection != null) {
+                throw new RabbitMQSetupException("Connection already opened");
             }
+
+            try {
+                connection = connectionFactory.newConnection();
+            } catch (final IOException | TimeoutException e) {
+                throw new RabbitMQSetupException("Could not open connection to RabbitMQ", e);
+            }
+            log.debug("Connected to Rabbit");
+
+            if (channel != null) {
+                throw new RabbitMQSetupException("Channel already opened");
+            }
+            channel = createChannel();
+            log.debug("Created channel");
+
+            for (ExchangeConfig exchangeConfig : config.getExchanges()) {
+                log.debug("Declaring exchange: {}", exchangeConfig.getName());
+                try {
+                    channel.exchangeDeclare(
+                        exchangeConfig.getName(),
+                        exchangeConfig.getType(),
+                        exchangeConfig.isDurable(),
+                        exchangeConfig.isAutoDelete(),
+                        null
+                    );
+                } catch (final IOException e) {
+                    throw new RabbitMQSetupException("Could not declare exchange " + exchangeConfig.getName(), e);
+                }
+            }
+            return connection;
+        } catch(final RabbitMQSetupException e) {
+            close();
+            throw e;
         }
-        return connection;
     }
 
     @Override
