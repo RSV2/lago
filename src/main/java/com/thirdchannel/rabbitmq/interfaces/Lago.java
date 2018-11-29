@@ -13,9 +13,7 @@ import java.util.Optional;
 /**
  * @author Steve Pember
  */
-public interface Lago {
-
-    void close();
+public interface Lago extends AutoCloseable {
 
     Connection getConnection();
     Connection connect() throws RabbitMQSetupException;
