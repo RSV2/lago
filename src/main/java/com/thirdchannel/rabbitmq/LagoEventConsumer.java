@@ -1,8 +1,8 @@
 package com.thirdchannel.rabbitmq;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Envelope;
@@ -11,19 +11,14 @@ import com.thirdchannel.rabbitmq.config.QueueConsumerConfig;
 import com.thirdchannel.rabbitmq.exceptions.RabbitMQSetupException;
 import com.thirdchannel.rabbitmq.interfaces.EventConsumer;
 import com.thirdchannel.rabbitmq.interfaces.Lago;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
-import java.util.ArrayList;
-import java.util.List;
 
-/**
- *
- * @author Steve Pember
- */
 abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneable {
     protected Logger log = LoggerFactory.getLogger(this.getClass());
     private Lago lago;
@@ -125,49 +120,70 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
     }
 
     @Override
-    public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+    public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) {
         if(log.isInfoEnabled()) {
             log.info(
                 "Handling message with topic {} on consumerTag {} and data: {}",
                 envelope.getRoutingKey(),
                 consumerTag,
-                new String(body)
+                new String(body, UTF_8)
             );
         }
         RabbitMQDeliveryDetails deliveryDetails = new RabbitMQDeliveryDetails(envelope, properties, consumerTag);
-        boolean deliveryStatus = false;
         try {
-            ObjectMapper objectMapper = getObjectMapper();
-            Class messageClass = getMessageClass();
-            JsonNode rootJsonNode = objectMapper.readTree(body);
-
-            if(getConfig().isBackwardsCompatible()) {
-                if (rootJsonNode.isObject()) {
-                    List<JsonNode> children = new ArrayList<>();
-                    children.add(rootJsonNode);
-                    rootJsonNode = new ArrayNode(objectMapper.getNodeFactory(), children);
-                }
-                Boolean anyFalse = false;
-                for (JsonNode n : rootJsonNode) {
-                    M value = (M) objectMapper.treeToValue(n, messageClass);
-                    if(!handleMessage(value, deliveryDetails)) {
-                        anyFalse = true;
-                    }
-                }
-                if(!anyFalse) {
-                    deliveryStatus = true;
-                }
-            } else {
-                M value = (M) objectMapper.treeToValue(rootJsonNode, messageClass);
-                if (handleMessage(value, deliveryDetails)) {
-                    deliveryStatus = true;
-                }
+            final ObjectMapper objectMapper = getObjectMapper();
+            final JsonNode rootJsonNode;
+            try {
+                rootJsonNode = objectMapper.readTree(body);
+            } catch (final IOException e) {
+                throw new LagoConsumerException("Could not read message as JSON", e);
             }
 
-        } catch(Exception e) {
-            log.error("Exception occurred while attempting to handle message on topic {}:", envelope.getRoutingKey(), e);
+            final boolean deliveryStatus;
+            if (rootJsonNode.isObject()) {
+
+                final M message = deserialize(objectMapper, rootJsonNode);
+                deliveryStatus = handleMessage(message, deliveryDetails);
+
+            } else if (rootJsonNode.isArray()) {
+
+                boolean allSuccessfullyHandled = true;
+                for(final JsonNode jsonElement : rootJsonNode) {
+                    final M message = deserialize(objectMapper, jsonElement);
+                    final boolean successfullyHandled = handleMessage(message, deliveryDetails);
+                    if(!successfullyHandled) {
+                        allSuccessfullyHandled = false;
+                    }
+                }
+                deliveryStatus = allSuccessfullyHandled;
+
+            } else{
+                throw new LagoConsumerException("Received message JSON that was not an Object or Array");
+            }
+
+            decideToAck(envelope, deliveryStatus);
+
+        } catch(final Exception e) {
+
+            if (log.isErrorEnabled()) {
+                log.error(
+                    "Exception occurred while attempting to handle message on topic {}: {}",
+                    envelope.getRoutingKey(),
+                    new String(body, UTF_8),
+                    e
+                );
+            }
+
         }
-        decideToAck(envelope, deliveryStatus);
+    }
+
+    private M deserialize(ObjectMapper objectMapper, JsonNode json) throws LagoConsumerException {
+        Class<M> messageClass = getMessageClass();
+        try {
+            return objectMapper.treeToValue(json, messageClass);
+        } catch (JsonProcessingException e) {
+            throw new LagoConsumerException("Could not deserialize JSON into " + messageClass.getCanonicalName(), e);
+        }
     }
 
     public ObjectMapper getObjectMapper() {
