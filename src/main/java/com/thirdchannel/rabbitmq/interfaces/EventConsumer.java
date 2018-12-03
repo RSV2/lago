@@ -6,8 +6,6 @@ import com.thirdchannel.rabbitmq.RabbitMQDeliveryDetails;
 import com.thirdchannel.rabbitmq.config.QueueConsumerConfig;
 import com.thirdchannel.rabbitmq.exceptions.RabbitMQSetupException;
 
-import java.io.IOException;
-
 /**
  * @author Steve Pember
  */
@@ -28,7 +26,7 @@ public interface EventConsumer<M> extends Consumer {
 
     Class<M> getMessageClass();
 
-    boolean handleMessage(M data, RabbitMQDeliveryDetails rabbitMQDeliveryDetails) throws IOException;
+    boolean handleMessage(M data, RabbitMQDeliveryDetails rabbitMQDeliveryDetails) throws Exception;
 
     /**
      * Like 'copy', but meant to be used to handle things like dependency injection;

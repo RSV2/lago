@@ -62,7 +62,7 @@ dependencies {
     compile 'com.fasterxml.jackson.core:jackson-databind:2.7.1'
     compile 'com.fasterxml.jackson.module:jackson-module-afterburner:2.7.1'
 
-    compile "com.rabbitmq:amqp-client:4.1.0"
+    compile "com.rabbitmq:amqp-client:4.9.0"
 
     testCompile "org.codehaus.groovy:groovy-all:2.4.5"
     testCompile "org.spockframework:spock-core:1.0-groovy-2.4"
@@ -72,7 +72,7 @@ dependencies {
 }
 
 group = 'com.thirdchannel'
-version = '0.2.6'
+version = '0.2.7'
 
 ext.isSnapshot = version.contains('SNAPSHOT')
 

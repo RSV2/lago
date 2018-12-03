@@ -3,6 +3,7 @@ package com.thirdchannel.rabbitmq;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -46,13 +47,13 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 
     public static ObjectMapper OBJECT_MAPPER = new ObjectMapper()
         .registerModule(new AfterburnerModule())
-        .configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
+        .configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
+        .configure(FAIL_ON_EMPTY_BEANS, false);
 
     private static final int NETWORK_RECOVERY_INTERVAL = 1000;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private final ConnectionFactory connectionFactory;
     private Connection connection;
     private Channel channel;
 
@@ -61,16 +62,10 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     private final List<EventConsumer> registeredConsumers = new ArrayList<>();
 
     private final RabbitMQConfig config;
-    private final PropertiesManager propertiesManager = new PropertiesManager();
 
     public Lago() throws LagoConfigLoadException {
+        final PropertiesManager propertiesManager = new PropertiesManager();
         config = propertiesManager.load();
-
-        connectionFactory = new ConnectionFactory();
-        connectionFactory.setAutomaticRecoveryEnabled(true);
-        connectionFactory.setNetworkRecoveryInterval(NETWORK_RECOVERY_INTERVAL);
-        connectionFactory.setTopologyRecoveryEnabled(true);
-        connectionFactory.setExceptionHandler(exceptionHandler);
     }
 
     @Override
@@ -190,24 +185,29 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 
     @Override
     public Connection connect(String url) throws RabbitMQSetupException {
+        log.debug("Connecting to RabbitMQ with URI: {}", url);
+
+        if(url == null) {
+            throw new RabbitMQSetupException("Given null RabbitMQ URL");
+        }
+
+        final ConnectionFactory connectionFactory = baseConnectionFactory();
 
         try {
             connectionFactory.setUri(url);
-
-            return connect(connectionFactory);
-        }
-        catch (NoSuchAlgorithmException
-            | KeyManagementException
-            | URISyntaxException
-            | NullPointerException e) {
+        } catch (final NoSuchAlgorithmException | KeyManagementException | URISyntaxException | NullPointerException e) {
+            // setURI can throw NPE with valid URIs - seems like a bug
             throw new RabbitMQSetupException("Could not set URI on connection factory", e);
         }
 
+        return connect(connectionFactory);
     }
 
     @Override
     public Connection connect(String userName, String password, String virtualHost, String host, int port)
         throws RabbitMQSetupException {
+
+        final ConnectionFactory connectionFactory = baseConnectionFactory();
 
         connectionFactory.setUsername(userName);
         connectionFactory.setPassword(password);
@@ -229,40 +229,43 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     @Override
     public Connection connect(ConnectionFactory connectionFactory) throws RabbitMQSetupException {
         try {
+            log.debug("Connecting to RabbitMQ with connection factory: {}", connectionFactory);
+
             if (connection != null) {
                 throw new RabbitMQSetupException("Connection already opened");
             }
-            connection = connectionFactory.newConnection();
 
+            try {
+                connection = connectionFactory.newConnection();
+            } catch (final IOException | TimeoutException e) {
+                throw new RabbitMQSetupException("Could not open connection to RabbitMQ", e);
+            }
             log.debug("Connected to Rabbit");
 
             if (channel != null) {
                 throw new RabbitMQSetupException("Channel already opened");
             }
-            channel = connection.createChannel();
+            channel = createChannel();
+            log.debug("Created channel");
 
-            log.debug("Declaring exchanges");
             for (ExchangeConfig exchangeConfig : config.getExchanges()) {
-                channel.exchangeDeclare(
-                    exchangeConfig.getName(),
-                    exchangeConfig.getType(),
-                    exchangeConfig.isDurable(),
-                    exchangeConfig.isAutoDelete(),
-                    null
-                );
+                log.debug("Declaring exchange: {}", exchangeConfig.getName());
+                try {
+                    channel.exchangeDeclare(
+                        exchangeConfig.getName(),
+                        exchangeConfig.getType(),
+                        exchangeConfig.isDurable(),
+                        exchangeConfig.isAutoDelete(),
+                        null
+                    );
+                } catch (final IOException e) {
+                    throw new RabbitMQSetupException("Could not declare exchange " + exchangeConfig.getName(), e);
+                }
             }
             return connection;
-        }
-        catch(IOException | TimeoutException e) {
-            try {
-                try {
-                    channel.close();
-                } finally {
-                    connection.close();
-                }
-            } finally {
-                throw new RabbitMQSetupException("Error setting up RabbitMQ", e);
-            }
+        } catch(final RabbitMQSetupException e) {
+            close();
+            throw e;
         }
     }
 
@@ -270,8 +273,7 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
     public Channel createChannel() throws RabbitMQSetupException {
         try {
             return connection.createChannel();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RabbitMQSetupException("Could not create channel", e);
         }
     }
@@ -288,12 +290,11 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 
     @Override
     public void close() {
-        if(channel != null) {
+        if(channel != null){
             try {
                 channel.close();
                 channel = null;
-            }
-            catch (IOException | TimeoutException e) {
+            } catch (final IOException | TimeoutException e) {
                 log.error("Could not close channel {}", channel, e);
             }
         }
@@ -301,13 +302,11 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
             try {
                 connection.close();
                 connection = null;
-            }
-            catch (IOException e) {
+            } catch (final IOException e) {
                 log.error("Could not close connection {}", connection, e);
             }
         }
     }
-
 
     @Override
     public Connection getConnection() {
@@ -526,4 +525,14 @@ public class Lago implements com.thirdchannel.rabbitmq.interfaces.Lago {
 
         return new RabbitMQDeliveryDetails(new Envelope(0, true, exchangeName, key), props, "temp-rpc");
     }
+
+    private ConnectionFactory baseConnectionFactory() {
+        final ConnectionFactory connectionFactory = new ConnectionFactory();
+        connectionFactory.setAutomaticRecoveryEnabled(true);
+        connectionFactory.setNetworkRecoveryInterval(NETWORK_RECOVERY_INTERVAL);
+        connectionFactory.setTopologyRecoveryEnabled(true);
+        connectionFactory.setExceptionHandler(exceptionHandler);
+        return connectionFactory;
+    }
+
 }
