@@ -120,7 +120,7 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
     }
 
     @Override
-    public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) {
+    public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
         if(log.isInfoEnabled()) {
             log.info(
                 "Handling message with topic {} on consumerTag {} and data: {}",
@@ -130,6 +130,7 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
             );
         }
         RabbitMQDeliveryDetails deliveryDetails = new RabbitMQDeliveryDetails(envelope, properties, consumerTag);
+        boolean deliveryStatus = false;
         try {
             final ObjectMapper objectMapper = getObjectMapper();
             final JsonNode rootJsonNode;
@@ -139,7 +140,6 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
                 throw new LagoConsumerException("Could not read message as JSON", e);
             }
 
-            final boolean deliveryStatus;
             if (rootJsonNode.isObject()) {
 
                 final M message = deserialize(objectMapper, rootJsonNode);
@@ -161,10 +161,7 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
                 throw new LagoConsumerException("Received message JSON that was not an Object or Array");
             }
 
-            decideToAck(envelope, deliveryStatus);
-
         } catch(final Exception e) {
-
             if (log.isErrorEnabled()) {
                 log.error(
                     "Exception occurred while attempting to handle message on topic {}: {}",
@@ -173,7 +170,8 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
                     e
                 );
             }
-
+        } finally {
+            decideToAck(envelope, deliveryStatus);
         }
     }
 
