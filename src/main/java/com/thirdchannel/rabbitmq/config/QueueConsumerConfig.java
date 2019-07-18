@@ -15,6 +15,7 @@ public class QueueConsumerConfig {
     private boolean durable = true;
     private boolean autoDelete = false;
     private boolean autoAck = false;
+    private boolean requeue = false;
     private boolean logTime = true; // if true, will log processing time for each request on this consumer
 
     public boolean isBackwardsCompatible() {
@@ -37,6 +38,12 @@ public class QueueConsumerConfig {
     public void setAutoAck(boolean autoAck) {
         this.autoAck = autoAck;
     }
+
+    public boolean isRequeue() {
+        return requeue;
+    }
+
+    public void setRequeue(boolean requeue) { this.requeue = requeue; }
 
     public String getName() {
         return name;

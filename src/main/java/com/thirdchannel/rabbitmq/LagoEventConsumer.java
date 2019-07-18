@@ -193,7 +193,7 @@ abstract public class LagoEventConsumer<M> implements EventConsumer<M>, Cloneabl
             if (deliveryStatus) {
                 channel.basicAck(envelope.getDeliveryTag(), false);
             } else {
-                channel.basicReject(envelope.getDeliveryTag(), false);
+                channel.basicReject(envelope.getDeliveryTag(), config.isRequeue());
             }
         }
     }
